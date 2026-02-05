@@ -1,0 +1,14 @@
+services:
+  k8s-dev:
+    build: .
+    container_name: kube-reflex-dev
+    volumes:
+      - .:/app
+      - ~/.kube/config:/root/.kube/config
+    ports:
+      - "8080:8080"
+    
+    environment:
+      - KUBECONFIG=/root/.kube/config
+      
+    command: sleep infinity

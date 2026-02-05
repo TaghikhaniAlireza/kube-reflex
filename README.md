@@ -17,6 +17,12 @@ and automatically executes remediation actions inside the cluster.
 
 Under active development
 
+## Testing ON..
+
+KubeBuilder: v4.11.1
+Kubernetes:  1.35.0
+Go OS/Arch:  linux/amd64
+
 ## License
 
 TBD
