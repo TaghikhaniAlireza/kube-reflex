@@ -10,8 +10,10 @@ services:
     environment:
       - KUBECONFIG=/root/.kube/config
       - DATABASE_URL=postgres://kubereflex:kubereflex@timescaledb:5432/kubereflex?sslmode=disable
+      - REDIS_ADDR=redis:6379
     depends_on:
       - timescaledb
+      - redis
     command: sleep infinity
 
   timescaledb:
@@ -26,5 +28,11 @@ services:
     volumes:
       - timescale_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: kube-reflex-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly no
 volumes:
   timescale_data:

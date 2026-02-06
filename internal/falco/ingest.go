@@ -8,10 +8,15 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
 )
 
+type Repository interface {
+	Insert(ctx context.Context, event db.FalcoEventDB) error
+}
+
 func IngestFromFile(
 	ctx context.Context,
 	path string,
-	repo *db.FalcoRepository,
+	repo Repository,
+	onEvent func(Event),
 ) error {
 
 	events := make(chan FalcoEventRaw)
@@ -23,22 +28,39 @@ func IngestFromFile(
 		}
 	}()
 
-	for e := range events {
-		dbEvent := db.FalcoEventDB{
-			Time:         e.Time,
-			Rule:         e.Rule,
-			Priority:     e.Priority,
-			Source:       e.Source,
-			Hostname:     e.Hostname,
-			Output:       e.Output,
-			Tags:         e.Tags,
-			OutputFields: e.OutputFields,
-		}
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("falco ingest stopped by context")
+			return ctx.Err()
 
-		if err := repo.Insert(ctx, dbEvent); err != nil {
-			log.Println("db insert error:", err)
+		case raw, ok := <-events:
+			if !ok {
+				return nil
+			}
+
+			event := DecodeEvent(raw)
+
+			dbEvent := db.FalcoEventDB{
+				Time:         event.Time,
+				Rule:         event.Rule,
+				Priority:     event.Priority,
+				Source:       event.Source,
+				Hostname:     event.Hostname,
+				Output:       event.Output,
+				Tags:         event.Tags,
+				OutputFields: event.OutputFields,
+			}
+
+			if err := repo.Insert(ctx, dbEvent); err != nil {
+				log.Println("db insert error:", err)
+				continue
+			}
+
+			// hook policy / scoring / redis
+			if onEvent != nil {
+				onEvent(event)
+			}
 		}
 	}
-
-	return nil
 }
