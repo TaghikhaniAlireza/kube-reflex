@@ -8,76 +8,84 @@ behaviors:
     Adversaries gather information they can use to plan future operations.
     This includes identifying victim infrastructure, identities, networks,
     organizations, and security posture through active and passive techniques.
-  techniques:
-    - T1595  # Active Scanning
-    - T1592  # Gather Victim Host Information
-    - T1589  # Gather Victim Identity Information
-    - T1590  # Gather Victim Network Information
-    - T1591  # Gather Victim Org Information
-    - T1598  # Phishing for Information
-    - T1597  # Search Closed Sources
-    - T1596  # Search Open Technical Databases
-    - T1593  # Search Open Websites/Domains
-    - T1594  # Search Victim-Owned Websites
-  sub-techniques:
-    # --- Active Scanning (3)
-    - T1595.001  # Scanning IP Blocks
-    - T1595.002  # Vulnerability Scanning
-    - T1595.003  # Wordlist Scanning
-
-    # --- Gather Victim Host Information (4)
-    - T1592.001  # Hardware
-    - T1592.002  # Software
-    - T1592.003  # Firmware
-    - T1592.004  # Client Configurations
-
-    # --- Gather Victim Identity Information (3)
-    - T1589.001  # Credentials
-    - T1589.002  # Email Addresses
-    - T1589.003  # Employee Names
-
-    # --- Gather Victim Network Information (6)
-    - T1590.001  # Domain Properties
-    - T1590.002  # DNS
-    - T1590.003  # Network Trust Dependencies
-    - T1590.004  # IP Addresses
-    - T1590.005  # Network Security Appliances
-    - T1590.006  # Network Topology
-
-    # --- Gather Victim Org Information (4)
-    - T1591.001  # Physical Locations
-    - T1591.002  # Business Relationships
-    - T1591.003  # Organizational Roles
-    - T1591.004  # Decision Makers
-
-    # --- Phishing for Information (4)
-    - T1598.001  # Spearphishing Service
-    - T1598.002  # Spearphishing Attachment
-    - T1598.003  # Spearphishing Link
-    - T1598.004  # Voice Phishing
-
-    # --- Search Closed Sources (2)
-    - T1597.001  # Search Threat Vendor Data
-    - T1597.002  # Purchase Technical Data
-
-    # --- Search Open Technical Databases (5)
-    - T1596.001  # DNS / Passive DNS
-    - T1596.002  # WHOIS
-    - T1596.003  # Digital Certificates
-    - T1596.004  # CDNs
-    - T1596.005  # Scan Databases (Shodan, Censys, etc.)
-
-    # --- Search Open Websites/Domains (3)
-    - T1593.001  # Social Media
-    - T1593.002  # Search Engines
-    - T1593.003  # Code Repositories
-
-    # --- Search Victim-Owned Websites (2)
-    - T1594.001  # Web Crawling
-    - T1594.002  # Web Archive Analysis
-
   severity_weight: 3
 
+  techniques:
+    - id: T1595
+      name: Active Scanning
+      sub_techniques:
+        - id: T1595.001  # Scanning IP Blocks
+        - id: T1595.002  # Vulnerability Scanning
+        - id: T1595.003  # Wordlist Scanning
+
+    - id: T1592
+      name: Gather Victim Host Information
+      sub_techniques:
+        - id: T1592.001  # Hardware
+        - id: T1592.002  # Software
+        - id: T1592.003  # Firmware
+        - id: T1592.004  # Client Configurations
+
+    - id: T1589
+      name: Gather Victim Identity Information
+      sub_techniques:
+        - id: T1589.001  # Credentials
+        - id: T1589.002  # Email Addresses
+        - id: T1589.003  # Employee Names
+
+    - id: T1590
+      name: Gather Victim Network Information
+      sub_techniques:
+        - id: T1590.001  # Domain Properties
+        - id: T1590.002  # DNS
+        - id: T1590.003  # Network Trust Dependencies
+        - id: T1590.004  # IP Addresses
+        - id: T1590.005  # Network Security Appliances
+        - id: T1590.006  # Network Topology
+
+    - id: T1591
+      name: Gather Victim Org Information
+      sub_techniques:
+        - id: T1591.001  # Physical Locations
+        - id: T1591.002  # Business Relationships
+        - id: T1591.003  # Organizational Roles
+        - id: T1591.004  # Decision Makers
+
+    - id: T1598
+      name: Phishing for Information
+      sub_techniques:
+        - id: T1598.001  # Spearphishing Service
+        - id: T1598.002  # Spearphishing Attachment
+        - id: T1598.003  # Spearphishing Link
+        - id: T1598.004  # Voice Phishing
+
+    - id: T1597
+      name: Search Closed Sources
+      sub_techniques:
+        - id: T1597.001  # Search Threat Vendor Data
+        - id: T1597.002  # Purchase Technical Data
+
+    - id: T1596
+      name: Search Open Technical Databases
+      sub_techniques:
+        - id: T1596.001  # DNS / Passive DNS
+        - id: T1596.002  # WHOIS
+        - id: T1596.003  # Digital Certificates
+        - id: T1596.004  # CDNs
+        - id: T1596.005  # Scan Databases
+
+    - id: T1593
+      name: Search Open Websites/Domains
+      sub_techniques:
+        - id: T1593.001  # Social Media
+        - id: T1593.002  # Search Engines
+        - id: T1593.003  # Code Repositories
+
+    - id: T1594
+      name: Search Victim-Owned Websites
+      sub_techniques:
+        - id: T1594.001  # Web Crawling
+        - id: T1594.002  # Web Archive Analysis
 
 - id: resource-development
   mitre: TA0042
@@ -86,75 +94,83 @@ behaviors:
     Adversaries develop, acquire, or compromise resources that can be used
     to support operations. These resources include infrastructure, accounts,
     tools, malware, and access mechanisms that enable later stages of the attack.
-  techniques:
-    - T1650  # Acquire Access
-    - T1583  # Acquire Infrastructure
-    - T1586  # Compromise Accounts
-    - T1584  # Compromise Infrastructure
-    - T1587  # Develop Capabilities
-    - T1585  # Establish Accounts
-    - T1588  # Obtain Capabilities
-    - T1608  # Stage Capabilities
-  sub-techniques:
-    # --- Acquire Access (3)
-    - T1650.001  # Credentials
-    - T1650.002  # Access Tokens
-    - T1650.003  # Session Cookies
-
-    # --- Acquire Infrastructure (8)
-    - T1583.001  # Domains
-    - T1583.002  # DNS Server
-    - T1583.003  # Virtual Private Server
-    - T1583.004  # Server
-    - T1583.005  # Botnet
-    - T1583.006  # Web Services
-    - T1583.007  # Social Media Accounts
-    - T1583.008  # Network Devices
-
-    # --- Compromise Accounts (3)
-    - T1586.001  # Social Media Accounts
-    - T1586.002  # Email Accounts
-    - T1586.003  # Cloud Accounts
-
-    # --- Compromise Infrastructure (8)
-    - T1584.001  # Domains
-    - T1584.002  # DNS Server
-    - T1584.003  # Virtual Private Server
-    - T1584.004  # Server
-    - T1584.005  # Botnet
-    - T1584.006  # Web Services
-    - T1584.007  # Network Devices
-    - T1584.008  # CDN
-
-    # --- Develop Capabilities (4)
-    - T1587.001  # Malware
-    - T1587.002  # Code Signing Certificates
-    - T1587.003  # Exploits
-    - T1587.004  # C2 Capabilities
-
-    # --- Establish Accounts (3)
-    - T1585.001  # Social Media Accounts
-    - T1585.002  # Email Accounts
-    - T1585.003  # Cloud Accounts
-
-    # --- Obtain Capabilities (7)
-    - T1588.001  # Malware
-    - T1588.002  # Tool
-    - T1588.003  # Code Signing Certificates
-    - T1588.004  # Exploits
-    - T1588.005  # Vulnerabilities
-    - T1588.006  # AI Models
-    - T1588.007  # Digital Certificates
-
-    # --- Stage Capabilities (6)
-    - T1608.001  # Upload Malware
-    - T1608.002  # Upload Tool
-    - T1608.003  # Install Digital Certificate
-    - T1608.004  # Upload Exploit
-    - T1608.005  # Upload Vulnerability
-    - T1608.006  # Stage Capabilities via Infrastructure
-
   severity_weight: 4
+
+  techniques:
+    - id: T1650  # Acquire Access
+      name: Acquire Access
+      sub_techniques:
+        - T1650.001  # Credentials
+        - T1650.002  # Access Tokens
+        - T1650.003  # Session Cookies
+
+    - id: T1583  # Acquire Infrastructure
+      name: Acquire Infrastructure
+      sub_techniques:
+        - T1583.001  # Domains
+        - T1583.002  # DNS Server
+        - T1583.003  # Virtual Private Server
+        - T1583.004  # Server
+        - T1583.005  # Botnet
+        - T1583.006  # Web Services
+        - T1583.007  # Social Media Accounts
+        - T1583.008  # Network Devices
+
+    - id: T1586  # Compromise Accounts
+      name: Compromise Accounts
+      sub_techniques:
+        - T1586.001  # Social Media Accounts
+        - T1586.002  # Email Accounts
+        - T1586.003  # Cloud Accounts
+
+    - id: T1584  # Compromise Infrastructure
+      name: Compromise Infrastructure
+      sub_techniques:
+        - T1584.001  # Domains
+        - T1584.002  # DNS Server
+        - T1584.003  # Virtual Private Server
+        - T1584.004  # Server
+        - T1584.005  # Botnet
+        - T1584.006  # Web Services
+        - T1584.007  # Network Devices
+        - T1584.008  # CDN
+
+    - id: T1587  # Develop Capabilities
+      name: Develop Capabilities
+      sub_techniques:
+        - T1587.001  # Malware
+        - T1587.002  # Code Signing Certificates
+        - T1587.003  # Exploits
+        - T1587.004  # C2 Capabilities
+
+    - id: T1585  # Establish Accounts
+      name: Establish Accounts
+      sub_techniques:
+        - T1585.001  # Social Media Accounts
+        - T1585.002  # Email Accounts
+        - T1585.003  # Cloud Accounts
+
+    - id: T1588  # Obtain Capabilities
+      name: Obtain Capabilities
+      sub_techniques:
+        - T1588.001  # Malware
+        - T1588.002  # Tool
+        - T1588.003  # Code Signing Certificates
+        - T1588.004  # Exploits
+        - T1588.005  # Vulnerabilities
+        - T1588.006  # AI Models
+        - T1588.007  # Digital Certificates
+
+    - id: T1608  # Stage Capabilities
+      name: Stage Capabilities
+      sub_techniques:
+        - T1608.001  # Upload Malware
+        - T1608.002  # Upload Tool
+        - T1608.003  # Install Digital Certificate
+        - T1608.004  # Upload Exploit
+        - T1608.005  # Upload Vulnerability
+        - T1608.006  # Stage Capabilities via Infrastructure
+
 
 - id: initial-access
   mitre: TA0001
@@ -163,60 +179,72 @@ behaviors:
     Adversaries attempt to gain an initial foothold within a target environment.
     This includes exploiting public-facing systems, phishing, abusing trusted
     relationships, using valid accounts, or leveraging supply chain weaknesses.
-  techniques:
-    - T1659  # Content Injection
-    - T1189  # Drive-by Compromise
-    - T1190  # Exploit Public-Facing Application
-    - T1133  # External Remote Services
-    - T1200  # Hardware Additions
-    - T1566  # Phishing
-    - T1091  # Replication Through Removable Media
-    - T1195  # Supply Chain Compromise
-    - T1199  # Trusted Relationship
-    - T1078  # Valid Accounts
-    - T1628  # Wi-Fi Networks
-  sub-techniques:
-    # --- Content Injection
-    - T1659      # Content Injection (no sub-techniques)
-
-    # --- Drive-by Compromise
-    - T1189      # Drive-by Compromise (no sub-techniques)
-
-    # --- Exploit Public-Facing Application
-    - T1190      # Exploit Public-Facing Application (no sub-techniques)
-
-    # --- External Remote Services
-    - T1133      # External Remote Services (no sub-techniques)
-
-    # --- Hardware Additions
-    - T1200      # Hardware Additions (no sub-techniques)
-
-    # --- Phishing (4)
-    - T1566.001  # Spearphishing Attachment
-    - T1566.002  # Spearphishing Link
-    - T1566.003  # Spearphishing via Service
-    - T1566.004  # Voice Phishing
-
-    # --- Replication Through Removable Media
-    - T1091      # Replication Through Removable Media (no sub-techniques)
-
-    # --- Supply Chain Compromise (3)
-    - T1195.001  # Compromise Software Dependencies and Development Tools
-    - T1195.002  # Compromise Software Supply Chain
-    - T1195.003  # Compromise Hardware Supply Chain
-
-    # --- Trusted Relationship
-    - T1199      # Trusted Relationship (no sub-techniques)
-
-    # --- Valid Accounts (4)
-    - T1078.001  # Default Accounts
-    - T1078.002  # Domain Accounts
-    - T1078.003  # Local Accounts
-    - T1078.004  # Cloud Accounts
-
-    # --- Wi-Fi Networks
-    - T1628      # Wi-Fi Networks (no sub-techniques)
   severity_weight: 5
+
+  techniques:
+    - id: T1659  # Content Injection
+      name: Content Injection
+      sub_techniques:
+        - T1659      # Content Injection (no sub-techniques)
+
+    - id: T1189  # Drive-by Compromise
+      name: Drive-by Compromise
+      sub_techniques:
+        - T1189      # Drive-by Compromise (no sub-techniques)
+
+    - id: T1190  # Exploit Public-Facing Application
+      name: Exploit Public-Facing Application
+      sub_techniques:
+        - T1190      # Exploit Public-Facing Application (no sub-techniques)
+
+    - id: T1133  # External Remote Services
+      name: External Remote Services
+      sub_techniques:
+        - T1133      # External Remote Services (no sub-techniques)
+
+    - id: T1200  # Hardware Additions
+      name: Hardware Additions
+      sub_techniques:
+        - T1200      # Hardware Additions (no sub-techniques)
+
+    - id: T1566  # Phishing
+      name: Phishing
+      sub_techniques:
+        - T1566.001  # Spearphishing Attachment
+        - T1566.002  # Spearphishing Link
+        - T1566.003  # Spearphishing via Service
+        - T1566.004  # Voice Phishing
+
+    - id: T1091  # Replication Through Removable Media
+      name: Replication Through Removable Media
+      sub_techniques:
+        - T1091      # Replication Through Removable Media (no sub-techniques)
+
+    - id: T1195  # Supply Chain Compromise
+      name: Supply Chain Compromise
+      sub_techniques:
+        - T1195.001  # Compromise Software Dependencies and Development Tools
+        - T1195.002  # Compromise Software Supply Chain
+        - T1195.003  # Compromise Hardware Supply Chain
+
+    - id: T1199  # Trusted Relationship
+      name: Trusted Relationship
+      sub_techniques:
+        - T1199      # Trusted Relationship (no sub-techniques)
+
+    - id: T1078  # Valid Accounts
+      name: Valid Accounts
+      sub_techniques:
+        - T1078.001  # Default Accounts
+        - T1078.002  # Domain Accounts
+        - T1078.003  # Local Accounts
+        - T1078.004  # Cloud Accounts
+
+    - id: T1628  # Wi-Fi Networks
+      name: Wi-Fi Networks
+      sub_techniques:
+        - T1628      # Wi-Fi Networks (no sub-techniques)
+
 
 - id: execution
   mitre: TA0002
@@ -226,100 +254,118 @@ behaviors:
     Execution may occur through command-line interfaces, scripting engines,
     container and cloud administration commands, scheduled tasks, or user
     interaction, often following successful initial access.
-  techniques:
-    - T1651  # Cloud Administration Command
-    - T1059  # Command and Scripting Interpreter
-    - T1609  # Container Administration Command
-    - T1610  # Deploy Container
-    - T1673  # ESXi Administration Command
-    - T1203  # Exploitation for Client Execution
-    - T1059  # Input Injection
-    - T1559  # Inter-Process Communication
-    - T1106  # Native API
-    - T1648  # Poisoned Pipeline Execution
-    - T1053  # Scheduled Task/Job
-    - T1649  # Serverless Execution
-    - T1129  # Shared Modules
-    - T1072  # Software Deployment Tools
-    - T1543  # System Services
-    - T1204  # User Execution
-    - T1047  # Windows Management Instrumentation
-  sub-techniques:
-    # --- Cloud Administration Command
-    - T1651      # Cloud Administration Command (no sub-techniques)
-
-    # --- Command and Scripting Interpreter (13)
-    - T1059.001  # PowerShell
-    - T1059.002  # AppleScript
-    - T1059.003  # Windows Command Shell
-    - T1059.004  # Unix Shell
-    - T1059.005  # Visual Basic
-    - T1059.006  # Python
-    - T1059.007  # JavaScript
-    - T1059.008  # Network Device CLI
-    - T1059.009  # Cloud API
-    - T1059.010  # AutoHotKey & AutoIt
-    - T1059.011  # Lua
-    - T1059.012  # Perl
-    - T1059.013  # Ruby
-
-    # --- Container Administration Command
-    - T1609      # Container Administration Command (no sub-techniques)
-
-    # --- Deploy Container
-    - T1610      # Deploy Container (no sub-techniques)
-
-    # --- ESXi Administration Command
-    - T1673      # ESXi Administration Command (no sub-techniques)
-
-    # --- Exploitation for Client Execution
-    - T1203      # Exploitation for Client Execution (no sub-techniques)
-
-    # --- Input Injection
-    - T1059      # Input Injection (execution via injected commands)
-
-    # --- Inter-Process Communication (3)
-    - T1559.001  # Component Object Model
-    - T1559.002  # Dynamic Data Exchange
-    - T1559.003  # Named Pipes
-
-    # --- Native API
-    - T1106      # Native API (no sub-techniques)
-
-    # --- Poisoned Pipeline Execution
-    - T1648      # Poisoned Pipeline Execution (no sub-techniques)
-
-    # --- Scheduled Task/Job (5)
-    - T1053.001  # At (Linux)
-    - T1053.002  # Cron
-    - T1053.003  # Scheduled Task (Windows)
-    - T1053.004  # Launchd
-    - T1053.005  # Container Orchestration Job
-
-    # --- Serverless Execution
-    - T1649      # Serverless Execution (no sub-techniques)
-
-    # --- Shared Modules
-    - T1129      # Shared Modules (no sub-techniques)
-
-    # --- Software Deployment Tools
-    - T1072      # Software Deployment Tools (no sub-techniques)
-
-    # --- System Services (3)
-    - T1543.001  # Windows Service
-    - T1543.002  # Systemd Service
-    - T1543.003  # Launch Agent / Daemon
-
-    # --- User Execution (5)
-    - T1204.001  # Malicious Link
-    - T1204.002  # Malicious File
-    - T1204.003  # Malicious Image
-    - T1204.004  # Malicious Shortcut
-    - T1204.005  # Malicious Script
-
-    # --- Windows Management Instrumentation
-    - T1047      # Windows Management Instrumentation (no sub-techniques)
   severity_weight: 6
+
+  techniques:
+    - id: T1651  # Cloud Administration Command
+      name: Cloud Administration Command
+      sub_techniques:
+        - T1651    # Cloud Administration Command (no sub-techniques)
+
+    - id: T1059  # Command and Scripting Interpreter
+      name: Command and Scripting Interpreter
+      sub_techniques:
+        - T1059.001  # PowerShell
+        - T1059.002  # AppleScript
+        - T1059.003  # Windows Command Shell
+        - T1059.004  # Unix Shell
+        - T1059.005  # Visual Basic
+        - T1059.006  # Python
+        - T1059.007  # JavaScript
+        - T1059.008  # Network Device CLI
+        - T1059.009  # Cloud API
+        - T1059.010  # AutoHotKey & AutoIt
+        - T1059.011  # Lua
+        - T1059.012  # Perl
+        - T1059.013  # Ruby
+
+    - id: T1609  # Container Administration Command
+      name: Container Administration Command
+      sub_techniques:
+        - T1609    # Container Administration Command (no sub-techniques)
+
+    - id: T1610  # Deploy Container
+      name: Deploy Container
+      sub_techniques:
+        - T1610    # Deploy Container (no sub-techniques)
+
+    - id: T1673  # ESXi Administration Command
+      name: ESXi Administration Command
+      sub_techniques:
+        - T1673    # ESXi Administration Command (no sub-techniques)
+
+    - id: T1203  # Exploitation for Client Execution
+      name: Exploitation for Client Execution
+      sub_techniques:
+        - T1203    # Exploitation for Client Execution (no sub-techniques)
+
+    - id: T1059  # Input Injection
+      name: Input Injection
+      sub_techniques:
+        - T1059    # Input Injection (execution via injected commands)
+
+    - id: T1559  # Inter-Process Communication
+      name: Inter-Process Communication
+      sub_techniques:
+        - T1559.001  # Component Object Model
+        - T1559.002  # Dynamic Data Exchange
+        - T1559.003  # Named Pipes
+
+    - id: T1106  # Native API
+      name: Native API
+      sub_techniques:
+        - T1106    # Native API (no sub-techniques)
+
+    - id: T1648  # Poisoned Pipeline Execution
+      name: Poisoned Pipeline Execution
+      sub_techniques:
+        - T1648    # Poisoned Pipeline Execution (no sub-techniques)
+
+    - id: T1053  # Scheduled Task/Job
+      name: Scheduled Task/Job
+      sub_techniques:
+        - T1053.001  # At (Linux)
+        - T1053.002  # Cron
+        - T1053.003  # Scheduled Task (Windows)
+        - T1053.004  # Launchd
+        - T1053.005  # Container Orchestration Job
+
+    - id: T1649  # Serverless Execution
+      name: Serverless Execution
+      sub_techniques:
+        - T1649    # Serverless Execution (no sub-techniques)
+
+    - id: T1129  # Shared Modules
+      name: Shared Modules
+      sub_techniques:
+        - T1129    # Shared Modules (no sub-techniques)
+
+    - id: T1072  # Software Deployment Tools
+      name: Software Deployment Tools
+      sub_techniques:
+        - T1072    # Software Deployment Tools (no sub-techniques)
+
+    - id: T1543  # System Services
+      name: System Services
+      sub_techniques:
+        - T1543.001  # Windows Service
+        - T1543.002  # Systemd Service
+        - T1543.003  # Launch Agent / Daemon
+
+    - id: T1204  # User Execution
+      name: User Execution
+      sub_techniques:
+        - T1204.001  # Malicious Link
+        - T1204.002  # Malicious File
+        - T1204.003  # Malicious Image
+        - T1204.004  # Malicious Shortcut
+        - T1204.005  # Malicious Script
+
+    - id: T1047  # Windows Management Instrumentation
+      name: Windows Management Instrumentation
+      sub_techniques:
+        - T1047    # Windows Management Instrumentation (no sub-techniques)
+
 
 - id: persistence
   mitre: TA0003
@@ -329,189 +375,204 @@ behaviors:
     credential changes, and other interruptions. Persistence mechanisms may
     involve account manipulation, autostart execution, scheduled jobs, service
     modification, or abuse of trusted software components.
-  techniques:
-    - T1098  # Account Manipulation
-    - T1197  # BITS Jobs
-    - T1547  # Boot or Logon Autostart Execution
-    - T1037  # Boot or Logon Initialization Scripts
-    - T1550  # Cloud Application Integration
-    - T1554  # Compromise Host Software Binary
-    - T1136  # Create Account
-    - T1543  # Create or Modify System Process
-    - T1546  # Event Triggered Execution
-    - T1646  # Exclusive Control
-    - T1133  # External Remote Services
-    - T1574  # Hijack Execution Flow
-    - T1525  # Implant Internal Image
-    - T1556  # Modify Authentication Process
-    - T1112  # Modify Registry
-    - T1137  # Office Application Startup
-    - T1647  # Power Settings
-    - T1542  # Pre-OS Boot
-    - T1053  # Scheduled Task/Job
-    - T1505  # Server Software Component
-    - T1176  # Software Extensions
-    - T1205  # Traffic Signaling
-    - T1078  # Valid Accounts
-  sub-techniques:
-    # --- Account Manipulation (7)
-    - T1098.001  # Additional Cloud Credentials
-    - T1098.002  # Additional Email Delegate Permissions
-    - T1098.003  # Additional Cloud Roles
-    - T1098.004  # SSH Authorized Keys
-    - T1098.005  # Device Registration
-    - T1098.006  # Additional Local or Domain Accounts
-    - T1098.007  # Credential Rotation Manipulation
-
-    # --- BITS Jobs
-    - T1197      # BITS Jobs (no sub-techniques)
-
-    # --- Boot or Logon Autostart Execution (14)
-    - T1547.001  # Registry Run Keys / Startup Folder
-    - T1547.002  # Authentication Package
-    - T1547.003  # Time Providers
-    - T1547.004  # Winlogon Helper DLL
-    - T1547.005  # Security Support Provider
-    - T1547.006  # Kernel Modules and Extensions
-    - T1547.007  # Re-opened Applications
-    - T1547.008  # LSASS Driver
-    - T1547.009  # Shortcut Modification
-    - T1547.010  # Port Monitors
-    - T1547.011  # Pluggable Authentication Modules
-    - T1547.012  # Print Processors
-    - T1547.013  # XDG Autostart Entries
-    - T1547.014  # Active Setup
-
-    # --- Boot or Logon Initialization Scripts (5)
-    - T1037.001  # Logon Script (Windows)
-    - T1037.002  # Logon Script (macOS)
-    - T1037.003  # Logon Script (Linux)
-    - T1037.004  # RC Scripts
-    - T1037.005  # Startup Items
-
-    # --- Cloud Application Integration
-    - T1550      # Cloud Application Integration (no sub-techniques)
-
-    # --- Compromise Host Software Binary
-    - T1554      # Compromise Host Software Binary (no sub-techniques)
-
-    # --- Create Account (3)
-    - T1136.001  # Local Account
-    - T1136.002  # Domain Account
-    - T1136.003  # Cloud Account
-
-    # --- Create or Modify System Process (5)
-    - T1543.001  # Windows Service
-    - T1543.002  # Systemd Service
-    - T1543.003  # Launch Agent
-    - T1543.004  # Launch Daemon
-    - T1543.005  # Container Service
-
-    # --- Event Triggered Execution (18)
-    - T1546.001  # Change Default File Association
-    - T1546.002  # Screensaver
-    - T1546.003  # Windows Management Instrumentation Event Subscription
-    - T1546.004  # Unix Shell Configuration Modification
-    - T1546.005  # Trap
-    - T1546.006  # LC_LOAD_DYLIB Addition
-    - T1546.007  # Netsh Helper DLL
-    - T1546.008  # Accessibility Features
-    - T1546.009  # AppInit DLLs
-    - T1546.010  # Application Shimming
-    - T1546.011  # Image File Execution Options Injection
-    - T1546.012  # Component Object Model Hijacking
-    - T1546.013  # PowerShell Profile
-    - T1546.014  # Emond
-    - T1546.015  # Port Monitors
-    - T1546.016  # Installer Packages
-    - T1546.017  # Udev Rules
-    - T1546.018  # Cloud Event Triggers
-
-    # --- Exclusive Control
-    - T1646      # Exclusive Control (no sub-techniques)
-
-    # --- External Remote Services
-    - T1133      # External Remote Services (no sub-techniques)
-
-    # --- Hijack Execution Flow (12)
-    - T1574.001  # DLL Search Order Hijacking
-    - T1574.002  # DLL Side-Loading
-    - T1574.003  # DLL Redirection
-    - T1574.004  # Dylib Hijacking
-    - T1574.005  # Executable Installer File Permissions Weakness
-    - T1574.006  # Dynamic Linker Hijacking
-    - T1574.007  # Path Interception by PATH Environment Variable
-    - T1574.008  # Path Interception by Search Order Hijacking
-    - T1574.009  # Path Interception by Unquoted Path
-    - T1574.010  # Services File Permissions Weakness
-    - T1574.011  # Services Registry Permissions Weakness
-    - T1574.012  # COR_PROFILER
-
-    # --- Implant Internal Image
-    - T1525      # Implant Internal Image (no sub-techniques)
-
-    # --- Modify Authentication Process (9)
-    - T1556.001  # Domain Controller Authentication
-    - T1556.002  # Password Filter DLL
-    - T1556.003  # Pluggable Authentication Modules
-    - T1556.004  # Network Device Authentication
-    - T1556.005  # Reversible Encryption
-    - T1556.006  # Multi-Factor Authentication
-    - T1556.007  # Hybrid Identity
-    - T1556.008  # Cloud Authentication
-    - T1556.009  # Identity Federation
-
-    # --- Modify Registry
-    - T1112      # Modify Registry (no sub-techniques)
-
-    # --- Office Application Startup (6)
-    - T1137.001  # Office Template Macros
-    - T1137.002  # Office Add-ins
-    - T1137.003  # Outlook Forms
-    - T1137.004  # Outlook Home Page
-    - T1137.005  # Outlook Rules
-    - T1137.006  # Add-ins (COM / VSTO)
-
-    # --- Power Settings
-    - T1647      # Power Settings (no sub-techniques)
-
-    # --- Pre-OS Boot (5)
-    - T1542.001  # System Firmware
-    - T1542.002  # Component Firmware
-    - T1542.003  # Bootkit
-    - T1542.004  # ROMMONkit
-    - T1542.005  # TFTP Boot
-
-    # --- Scheduled Task/Job (5)
-    - T1053.001  # At (Linux)
-    - T1053.002  # Cron
-    - T1053.003  # Scheduled Task (Windows)
-    - T1053.004  # Launchd
-    - T1053.005  # Container Orchestration Job
-
-    # --- Server Software Component (6)
-    - T1505.001  # SQL Stored Procedures
-    - T1505.002  # Transport Agent
-    - T1505.003  # IIS Components
-    - T1505.004  # Web Shell
-    - T1505.005  # Application Plugin
-    - T1505.006  # Cloud Service Component
-
-    # --- Software Extensions (2)
-    - T1176.001  # Browser Extensions
-    - T1176.002  # IDE Extensions
-
-    # --- Traffic Signaling (2)
-    - T1205.001  # Port Knocking
-    - T1205.002  # Dead Drop Resolver
-
-    # --- Valid Accounts (4)
-    - T1078.001  # Default Accounts
-    - T1078.002  # Domain Accounts
-    - T1078.003  # Local Accounts
-    - T1078.004  # Cloud Accounts
-
   severity_weight: 7
+
+  techniques:
+    - id: T1098
+      name: Account Manipulation
+      sub_techniques:
+        - id: T1098.001
+        - id: T1098.002
+        - id: T1098.003
+        - id: T1098.004
+        - id: T1098.005
+        - id: T1098.006
+        - id: T1098.007
+
+    - id: T1197
+      name: BITS Jobs
+      sub_techniques: []
+
+    - id: T1547
+      name: Boot or Logon Autostart Execution
+      sub_techniques:
+        - id: T1547.001
+        - id: T1547.002
+        - id: T1547.003
+        - id: T1547.004
+        - id: T1547.005
+        - id: T1547.006
+        - id: T1547.007
+        - id: T1547.008
+        - id: T1547.009
+        - id: T1547.010
+        - id: T1547.011
+        - id: T1547.012
+        - id: T1547.013
+        - id: T1547.014
+
+    - id: T1037
+      name: Boot or Logon Initialization Scripts
+      sub_techniques:
+        - id: T1037.001
+        - id: T1037.002
+        - id: T1037.003
+        - id: T1037.004
+        - id: T1037.005
+
+    - id: T1550
+      name: Cloud Application Integration
+      sub_techniques: []
+
+    - id: T1554
+      name: Compromise Host Software Binary
+      sub_techniques: []
+
+    - id: T1136
+      name: Create Account
+      sub_techniques:
+        - id: T1136.001
+        - id: T1136.002
+        - id: T1136.003
+
+    - id: T1543
+      name: Create or Modify System Process
+      sub_techniques:
+        - id: T1543.001
+        - id: T1543.002
+        - id: T1543.003
+        - id: T1543.004
+        - id: T1543.005
+
+    - id: T1546
+      name: Event Triggered Execution
+      sub_techniques:
+        - id: T1546.001
+        - id: T1546.002
+        - id: T1546.003
+        - id: T1546.004
+        - id: T1546.005
+        - id: T1546.006
+        - id: T1546.007
+        - id: T1546.008
+        - id: T1546.009
+        - id: T1546.010
+        - id: T1546.011
+        - id: T1546.012
+        - id: T1546.013
+        - id: T1546.014
+        - id: T1546.015
+        - id: T1546.016
+        - id: T1546.017
+        - id: T1546.018
+
+    - id: T1646
+      name: Exclusive Control
+      sub_techniques: []
+
+    - id: T1133
+      name: External Remote Services
+      sub_techniques: []
+
+    - id: T1574
+      name: Hijack Execution Flow
+      sub_techniques:
+        - id: T1574.001
+        - id: T1574.002
+        - id: T1574.003
+        - id: T1574.004
+        - id: T1574.005
+        - id: T1574.006
+        - id: T1574.007
+        - id: T1574.008
+        - id: T1574.009
+        - id: T1574.010
+        - id: T1574.011
+        - id: T1574.012
+
+    - id: T1525
+      name: Implant Internal Image
+      sub_techniques: []
+
+    - id: T1556
+      name: Modify Authentication Process
+      sub_techniques:
+        - id: T1556.001
+        - id: T1556.002
+        - id: T1556.003
+        - id: T1556.004
+        - id: T1556.005
+        - id: T1556.006
+        - id: T1556.007
+        - id: T1556.008
+        - id: T1556.009
+
+    - id: T1112
+      name: Modify Registry
+      sub_techniques: []
+
+    - id: T1137
+      name: Office Application Startup
+      sub_techniques:
+        - id: T1137.001
+        - id: T1137.002
+        - id: T1137.003
+        - id: T1137.004
+        - id: T1137.005
+        - id: T1137.006
+
+    - id: T1647
+      name: Power Settings
+      sub_techniques: []
+
+    - id: T1542
+      name: Pre-OS Boot
+      sub_techniques:
+        - id: T1542.001
+        - id: T1542.002
+        - id: T1542.003
+        - id: T1542.004
+        - id: T1542.005
+
+    - id: T1053
+      name: Scheduled Task/Job
+      sub_techniques:
+        - id: T1053.001
+        - id: T1053.002
+        - id: T1053.003
+        - id: T1053.004
+        - id: T1053.005
+
+    - id: T1505
+      name: Server Software Component
+      sub_techniques:
+        - id: T1505.001
+        - id: T1505.002
+        - id: T1505.003
+        - id: T1505.004
+        - id: T1505.005
+        - id: T1505.006
+
+    - id: T1176
+      name: Software Extensions
+      sub_techniques:
+        - id: T1176.001
+        - id: T1176.002
+
+    - id: T1205
+      name: Traffic Signaling
+      sub_techniques:
+        - id: T1205.001
+        - id: T1205.002
+
+    - id: T1078
+      name: Valid Accounts
+      sub_techniques:
+        - id: T1078.001
+        - id: T1078.002
+        - id: T1078.003
+        - id: T1078.004
+
 
 - id: privilege_escalation
   mitre: TA0004
@@ -521,147 +582,160 @@ behaviors:
     Privilege escalation techniques often involve abusing system misconfigurations,
     exploiting vulnerabilities, manipulating tokens or credentials, or hijacking
     trusted execution paths.
-  techniques:
-    - T1548  # Abuse Elevation Control Mechanism
-    - T1134  # Access Token Manipulation
-    - T1098  # Account Manipulation
-    - T1547  # Boot or Logon Autostart Execution
-    - T1037  # Boot or Logon Initialization Scripts
-    - T1543  # Create or Modify System Process
-    - T1484  # Domain or Tenant Policy Modification
-    - T1611  # Escape to Host
-    - T1546  # Event Triggered Execution
-    - T1068  # Exploitation for Privilege Escalation
-    - T1574  # Hijack Execution Flow
-    - T1055  # Process Injection
-    - T1053  # Scheduled Task/Job
-    - T1078  # Valid Accounts
-  sub-techniques:
-    # --- Abuse Elevation Control Mechanism (6)
-    - T1548.001  # Setuid and Setgid
-    - T1548.002  # Bypass User Account Control
-    - T1548.003  # Sudo and Sudo Caching
-    - T1548.004  # Elevated Execution with Prompt
-    - T1548.005  # Temporary Elevated Cloud Access
-    - T1548.006  # Policy-Based Elevation
-
-    # --- Access Token Manipulation (5)
-    - T1134.001  # Token Impersonation/Theft
-    - T1134.002  # Create Process with Token
-    - T1134.003  # Make and Impersonate Token
-    - T1134.004  # Parent PID Spoofing
-    - T1134.005  # SID-History Injection
-
-    # --- Account Manipulation (7)
-    - T1098.001  # Additional Cloud Credentials
-    - T1098.002  # Additional Email Delegate Permissions
-    - T1098.003  # Additional Cloud Roles
-    - T1098.004  # SSH Authorized Keys
-    - T1098.005  # Device Registration
-    - T1098.006  # Additional Local or Domain Accounts
-    - T1098.007  # Credential Rotation Manipulation
-
-    # --- Boot or Logon Autostart Execution (14)
-    - T1547.001
-    - T1547.002
-    - T1547.003
-    - T1547.004
-    - T1547.005
-    - T1547.006
-    - T1547.007
-    - T1547.008
-    - T1547.009
-    - T1547.010
-    - T1547.011
-    - T1547.012
-    - T1547.013
-    - T1547.014
-
-    # --- Boot or Logon Initialization Scripts (5)
-    - T1037.001
-    - T1037.002
-    - T1037.003
-    - T1037.004
-    - T1037.005
-
-    # --- Create or Modify System Process (5)
-    - T1543.001
-    - T1543.002
-    - T1543.003
-    - T1543.004
-    - T1543.005
-
-    # --- Domain or Tenant Policy Modification (2)
-    - T1484.001  # Domain Policy Modification
-    - T1484.002  # Trust Modification
-
-    # --- Escape to Host
-    - T1611      # Escape to Host (no sub-techniques)
-
-    # --- Event Triggered Execution (18)
-    - T1546.001
-    - T1546.002
-    - T1546.003
-    - T1546.004
-    - T1546.005
-    - T1546.006
-    - T1546.007
-    - T1546.008
-    - T1546.009
-    - T1546.010
-    - T1546.011
-    - T1546.012
-    - T1546.013
-    - T1546.014
-    - T1546.015
-    - T1546.016
-    - T1546.017
-    - T1546.018
-
-    # --- Exploitation for Privilege Escalation
-    - T1068      # Exploitation for Privilege Escalation (no sub-techniques)
-
-    # --- Hijack Execution Flow (12)
-    - T1574.001
-    - T1574.002
-    - T1574.003
-    - T1574.004
-    - T1574.005
-    - T1574.006
-    - T1574.007
-    - T1574.008
-    - T1574.009
-    - T1574.010
-    - T1574.011
-    - T1574.012
-
-    # --- Process Injection (12)
-    - T1055.001  # Dynamic-link Library Injection
-    - T1055.002  # Portable Executable Injection
-    - T1055.003  # Thread Execution Hijacking
-    - T1055.004  # Asynchronous Procedure Call
-    - T1055.005  # Thread Local Storage
-    - T1055.006  # Ptrace
-    - T1055.007  # Process Hollowing
-    - T1055.008  # Process Doppelgänging
-    - T1055.009  # Proc Memory
-    - T1055.010  # Extra Window Memory Injection
-    - T1055.011  # Process Ghosting
-    - T1055.012  # Reflective Code Loading
-
-    # --- Scheduled Task/Job (5)
-    - T1053.001
-    - T1053.002
-    - T1053.003
-    - T1053.004
-    - T1053.005
-
-    # --- Valid Accounts (4)
-    - T1078.001
-    - T1078.002
-    - T1078.003
-    - T1078.004
   severity_weight: 8
+
+  techniques:
+    - id: T1548
+      name: Abuse Elevation Control Mechanism
+      sub_techniques:
+        - id: T1548.001
+        - id: T1548.002
+        - id: T1548.003
+        - id: T1548.004
+        - id: T1548.005
+        - id: T1548.006
+
+    - id: T1134
+      name: Access Token Manipulation
+      sub_techniques:
+        - id: T1134.001
+        - id: T1134.002
+        - id: T1134.003
+        - id: T1134.004
+        - id: T1134.005
+
+    - id: T1098
+      name: Account Manipulation
+      sub_techniques:
+        - id: T1098.001
+        - id: T1098.002
+        - id: T1098.003
+        - id: T1098.004
+        - id: T1098.005
+        - id: T1098.006
+        - id: T1098.007
+
+    - id: T1547
+      name: Boot or Logon Autostart Execution
+      sub_techniques:
+        - id: T1547.001
+        - id: T1547.002
+        - id: T1547.003
+        - id: T1547.004
+        - id: T1547.005
+        - id: T1547.006
+        - id: T1547.007
+        - id: T1547.008
+        - id: T1547.009
+        - id: T1547.010
+        - id: T1547.011
+        - id: T1547.012
+        - id: T1547.013
+        - id: T1547.014
+
+    - id: T1037
+      name: Boot or Logon Initialization Scripts
+      sub_techniques:
+        - id: T1037.001
+        - id: T1037.002
+        - id: T1037.003
+        - id: T1037.004
+        - id: T1037.005
+
+    - id: T1543
+      name: Create or Modify System Process
+      sub_techniques:
+        - id: T1543.001
+        - id: T1543.002
+        - id: T1543.003
+        - id: T1543.004
+        - id: T1543.005
+
+    - id: T1484
+      name: Domain or Tenant Policy Modification
+      sub_techniques:
+        - id: T1484.001
+        - id: T1484.002
+
+    - id: T1611
+      name: Escape to Host
+      sub_techniques: []
+
+    - id: T1546
+      name: Event Triggered Execution
+      sub_techniques:
+        - id: T1546.001
+        - id: T1546.002
+        - id: T1546.003
+        - id: T1546.004
+        - id: T1546.005
+        - id: T1546.006
+        - id: T1546.007
+        - id: T1546.008
+        - id: T1546.009
+        - id: T1546.010
+        - id: T1546.011
+        - id: T1546.012
+        - id: T1546.013
+        - id: T1546.014
+        - id: T1546.015
+        - id: T1546.016
+        - id: T1546.017
+        - id: T1546.018
+
+    - id: T1068
+      name: Exploitation for Privilege Escalation
+      sub_techniques: []
+
+    - id: T1574
+      name: Hijack Execution Flow
+      sub_techniques:
+        - id: T1574.001
+        - id: T1574.002
+        - id: T1574.003
+        - id: T1574.004
+        - id: T1574.005
+        - id: T1574.006
+        - id: T1574.007
+        - id: T1574.008
+        - id: T1574.009
+        - id: T1574.010
+        - id: T1574.011
+        - id: T1574.012
+
+    - id: T1055
+      name: Process Injection
+      sub_techniques:
+        - id: T1055.001
+        - id: T1055.002
+        - id: T1055.003
+        - id: T1055.004
+        - id: T1055.005
+        - id: T1055.006
+        - id: T1055.007
+        - id: T1055.008
+        - id: T1055.009
+        - id: T1055.010
+        - id: T1055.011
+        - id: T1055.012
+
+    - id: T1053
+      name: Scheduled Task/Job
+      sub_techniques:
+        - id: T1053.001
+        - id: T1053.002
+        - id: T1053.003
+        - id: T1053.004
+        - id: T1053.005
+
+    - id: T1078
+      name: Valid Accounts
+      sub_techniques:
+        - id: T1078.001
+        - id: T1078.002
+        - id: T1078.003
+        - id: T1078.004
+
 
 - id: defense_evasion
   mitre: TA0005
@@ -670,275 +744,316 @@ behaviors:
     Adversaries attempt to evade detection, disable security controls,
     hide malicious activity, and bypass defensive mechanisms in host,
     network, cloud, container, and identity environments.
-  techniques:
-    - T1548  # Abuse Elevation Control Mechanism
-    - T1134  # Access Token Manipulation
-    - T1197  # BITS Jobs
-    - T1612  # Build Image on Host
-    - T1622  # Debugger Evasion
-    - T1497  # Delay Execution
-    - T1140  # Deobfuscate/Decode Files or Information
-    - T1610  # Deploy Container
-    - T1006  # Direct Volume Access
-    - T1484  # Domain or Tenant Policy Modification
-    - T1566  # Email Spoofing
-    - T1480  # Execution Guardrails
-    - T1211  # Exploitation for Defense Evasion
-    - T1222  # File and Directory Permissions Modification
-    - T1564  # Hide Artifacts
-    - T1574  # Hijack Execution Flow
-    - T1562  # Impair Defenses
-    - T1656  # Impersonation
-    - T1070  # Indicator Removal
-    - T1202  # Indirect Command Execution
-    - T1036  # Masquerading
-    - T1556  # Modify Authentication Process
-    - T1578  # Modify Cloud Compute Infrastructure
-    - T1485  # Modify Cloud Resource Hierarchy
-    - T1112  # Modify Registry
-    - T1529  # Modify System Image
-    - T1599  # Network Boundary Bridging
-    - T1027  # Obfuscated Files or Information
-    - T1645  # Plist File Modification
-    - T1542  # Pre-OS Boot
-    - T1055  # Process Injection
-    - T1620  # Reflective Code Loading
-    - T1496  # Rogue Domain Controller
-    - T1014  # Rootkit
-    - T1564.011 # Selective Exclusion
-    - T1553  # Subvert Trust Controls
-    - T1218  # System Binary Proxy Execution
-    - T1216  # System Script Proxy Execution
-    - T1221  # Template Injection
-    - T1205  # Traffic Signaling
-    - T1127  # Trusted Developer Utilities Proxy Execution
-    - T1535  # Unused/Unsupported Cloud Regions
-    - T1550  # Use Alternate Authentication Material
-    - T1078  # Valid Accounts
-    - T1497  # Virtualization/Sandbox Evasion
-    - T1600  # Weaken Encryption
-    - T1220  # XSL Script Processing
-  sub-techniques:
-    # Abuse Elevation Control Mechanism (6)
-    - T1548.001
-    - T1548.002
-    - T1548.003
-    - T1548.004
-    - T1548.005
-    - T1548.006
-
-    # Access Token Manipulation (5)
-    - T1134.001
-    - T1134.002
-    - T1134.003
-    - T1134.004
-    - T1134.005
-
-    # Domain or Tenant Policy Modification (2)
-    - T1484.001
-    - T1484.002
-
-    # Execution Guardrails (2)
-    - T1480.001
-    - T1480.002
-
-    # File and Directory Permissions Modification (2)
-    - T1222.001
-    - T1222.002
-
-    # Hide Artifacts (14)
-    - T1564.001
-    - T1564.002
-    - T1564.003
-    - T1564.004
-    - T1564.005
-    - T1564.006
-    - T1564.007
-    - T1564.008
-    - T1564.009
-    - T1564.010
-    - T1564.011
-    - T1564.012
-    - T1564.013
-    - T1564.014
-
-    # Hijack Execution Flow (12)
-    - T1574.001
-    - T1574.002
-    - T1574.003
-    - T1574.004
-    - T1574.005
-    - T1574.006
-    - T1574.007
-    - T1574.008
-    - T1574.009
-    - T1574.010
-    - T1574.011
-    - T1574.012
-
-    # Impair Defenses (12)
-    - T1562.001
-    - T1562.002
-    - T1562.003
-    - T1562.004
-    - T1562.005
-    - T1562.006
-    - T1562.007
-    - T1562.008
-    - T1562.009
-    - T1562.010
-    - T1562.011
-    - T1562.012
-
-    # Indicator Removal (10)
-    - T1070.001
-    - T1070.002
-    - T1070.003
-    - T1070.004
-    - T1070.005
-    - T1070.006
-    - T1070.007
-    - T1070.008
-    - T1070.009
-    - T1070.010
-
-    # Masquerading (12)
-    - T1036.001
-    - T1036.002
-    - T1036.003
-    - T1036.004
-    - T1036.005
-    - T1036.006
-    - T1036.007
-    - T1036.008
-    - T1036.009
-    - T1036.010
-    - T1036.011
-    - T1036.012
-
-    # Modify Authentication Process (9)
-    - T1556.001
-    - T1556.002
-    - T1556.003
-    - T1556.004
-    - T1556.005
-    - T1556.006
-    - T1556.007
-    - T1556.008
-    - T1556.009
-
-    # Modify Cloud Compute Infrastructure (5)
-    - T1578.001
-    - T1578.002
-    - T1578.003
-    - T1578.004
-    - T1578.005
-
-    # Modify System Image (2)
-    - T1529.001
-    - T1529.002
-
-    # Network Boundary Bridging (1)
-    - T1599.001
-
-    # Obfuscated Files or Information (17)
-    - T1027.001
-    - T1027.002
-    - T1027.003
-    - T1027.004
-    - T1027.005
-    - T1027.006
-    - T1027.007
-    - T1027.008
-    - T1027.009
-    - T1027.010
-    - T1027.011
-    - T1027.012
-    - T1027.013
-    - T1027.014
-    - T1027.015
-    - T1027.016
-    - T1027.017
-
-    # Pre-OS Boot (5)
-    - T1542.001
-    - T1542.002
-    - T1542.003
-    - T1542.004
-    - T1542.005
-
-    # Process Injection (12)
-    - T1055.001
-    - T1055.002
-    - T1055.003
-    - T1055.004
-    - T1055.005
-    - T1055.006
-    - T1055.007
-    - T1055.008
-    - T1055.009
-    - T1055.010
-    - T1055.011
-    - T1055.012
-
-    # Subvert Trust Controls (6)
-    - T1553.001
-    - T1553.002
-    - T1553.003
-    - T1553.004
-    - T1553.005
-    - T1553.006
-
-    # System Binary Proxy Execution (14)
-    - T1218.001
-    - T1218.002
-    - T1218.003
-    - T1218.004
-    - T1218.005
-    - T1218.006
-    - T1218.007
-    - T1218.008
-    - T1218.009
-    - T1218.010
-    - T1218.011
-    - T1218.012
-    - T1218.013
-    - T1218.014
-
-    # System Script Proxy Execution (2)
-    - T1216.001
-    - T1216.002
-
-    # Traffic Signaling (2)
-    - T1205.001
-    - T1205.002
-
-    # Trusted Developer Utilities Proxy Execution (3)
-    - T1127.001
-    - T1127.002
-    - T1127.003
-
-    # Use Alternate Authentication Material (4)
-    - T1550.001
-    - T1550.002
-    - T1550.003
-    - T1550.004
-
-    # Valid Accounts (4)
-    - T1078.001
-    - T1078.002
-    - T1078.003
-    - T1078.004
-
-    # Virtualization/Sandbox Evasion (3)
-    - T1497.001
-    - T1497.002
-    - T1497.003
-
-    # Weaken Encryption (2)
-    - T1600.001
-    - T1600.002
   severity_weight: 9
+
+  techniques:
+    - id: T1548
+      name: Abuse Elevation Control Mechanism
+      sub_techniques:
+        - id: T1548.001
+        - id: T1548.002
+        - id: T1548.003
+        - id: T1548.004
+        - id: T1548.005
+        - id: T1548.006
+
+    - id: T1134
+      name: Access Token Manipulation
+      sub_techniques:
+        - id: T1134.001
+        - id: T1134.002
+        - id: T1134.003
+        - id: T1134.004
+        - id: T1134.005
+
+    - id: T1197
+      name: BITS Jobs
+      sub_techniques: []
+
+    - id: T1612
+      name: Build Image on Host
+      sub_techniques: []
+
+    - id: T1622
+      name: Debugger Evasion
+      sub_techniques: []
+
+    - id: T1140
+      name: Deobfuscate/Decode Files or Information
+      sub_techniques: []
+
+    - id: T1610
+      name: Deploy Container
+      sub_techniques: []
+
+    - id: T1006
+      name: Direct Volume Access
+      sub_techniques: []
+
+    - id: T1484
+      name: Domain or Tenant Policy Modification
+      sub_techniques:
+        - id: T1484.001
+        - id: T1484.002
+
+    - id: T1566
+      name: Email Spoofing
+      sub_techniques: []
+
+    - id: T1480
+      name: Execution Guardrails
+      sub_techniques:
+        - id: T1480.001
+        - id: T1480.002
+
+    - id: T1211
+      name: Exploitation for Defense Evasion
+      sub_techniques: []
+
+    - id: T1222
+      name: File and Directory Permissions Modification
+      sub_techniques:
+        - id: T1222.001
+        - id: T1222.002
+
+    - id: T1564
+      name: Hide Artifacts
+      sub_techniques:
+        - id: T1564.001
+        - id: T1564.002
+        - id: T1564.003
+        - id: T1564.004
+        - id: T1564.005
+        - id: T1564.006
+        - id: T1564.007
+        - id: T1564.008
+        - id: T1564.009
+        - id: T1564.010
+        - id: T1564.011
+        - id: T1564.012
+        - id: T1564.013
+        - id: T1564.014
+
+    - id: T1574
+      name: Hijack Execution Flow
+      sub_techniques:
+        - id: T1574.001
+        - id: T1574.002
+        - id: T1574.003
+        - id: T1574.004
+        - id: T1574.005
+        - id: T1574.006
+        - id: T1574.007
+        - id: T1574.008
+        - id: T1574.009
+        - id: T1574.010
+        - id: T1574.011
+        - id: T1574.012
+
+    - id: T1562
+      name: Impair Defenses
+      sub_techniques:
+        - id: T1562.001
+        - id: T1562.002
+        - id: T1562.003
+        - id: T1562.004
+        - id: T1562.005
+        - id: T1562.006
+        - id: T1562.007
+        - id: T1562.008
+        - id: T1562.009
+        - id: T1562.010
+        - id: T1562.011
+        - id: T1562.012
+
+    - id: T1070
+      name: Indicator Removal
+      sub_techniques:
+        - id: T1070.001
+        - id: T1070.002
+        - id: T1070.003
+        - id: T1070.004
+        - id: T1070.005
+        - id: T1070.006
+        - id: T1070.007
+        - id: T1070.008
+        - id: T1070.009
+        - id: T1070.010
+
+    - id: T1036
+      name: Masquerading
+      sub_techniques:
+        - id: T1036.001
+        - id: T1036.002
+        - id: T1036.003
+        - id: T1036.004
+        - id: T1036.005
+        - id: T1036.006
+        - id: T1036.007
+        - id: T1036.008
+        - id: T1036.009
+        - id: T1036.010
+        - id: T1036.011
+        - id: T1036.012
+
+    - id: T1556
+      name: Modify Authentication Process
+      sub_techniques:
+        - id: T1556.001
+        - id: T1556.002
+        - id: T1556.003
+        - id: T1556.004
+        - id: T1556.005
+        - id: T1556.006
+        - id: T1556.007
+        - id: T1556.008
+        - id: T1556.009
+
+    - id: T1578
+      name: Modify Cloud Compute Infrastructure
+      sub_techniques:
+        - id: T1578.001
+        - id: T1578.002
+        - id: T1578.003
+        - id: T1578.004
+        - id: T1578.005
+
+    - id: T1529
+      name: Modify System Image
+      sub_techniques:
+        - id: T1529.001
+        - id: T1529.002
+
+    - id: T1599
+      name: Network Boundary Bridging
+      sub_techniques:
+        - id: T1599.001
+
+    - id: T1027
+      name: Obfuscated Files or Information
+      sub_techniques:
+        - id: T1027.001
+        - id: T1027.002
+        - id: T1027.003
+        - id: T1027.004
+        - id: T1027.005
+        - id: T1027.006
+        - id: T1027.007
+        - id: T1027.008
+        - id: T1027.009
+        - id: T1027.010
+        - id: T1027.011
+        - id: T1027.012
+        - id: T1027.013
+        - id: T1027.014
+        - id: T1027.015
+        - id: T1027.016
+        - id: T1027.017
+
+    - id: T1542
+      name: Pre-OS Boot
+      sub_techniques:
+        - id: T1542.001
+        - id: T1542.002
+        - id: T1542.003
+        - id: T1542.004
+        - id: T1542.005
+
+    - id: T1055
+      name: Process Injection
+      sub_techniques:
+        - id: T1055.001
+        - id: T1055.002
+        - id: T1055.003
+        - id: T1055.004
+        - id: T1055.005
+        - id: T1055.006
+        - id: T1055.007
+        - id: T1055.008
+        - id: T1055.009
+        - id: T1055.010
+        - id: T1055.011
+        - id: T1055.012
+
+    - id: T1553
+      name: Subvert Trust Controls
+      sub_techniques:
+        - id: T1553.001
+        - id: T1553.002
+        - id: T1553.003
+        - id: T1553.004
+        - id: T1553.005
+        - id: T1553.006
+
+    - id: T1218
+      name: System Binary Proxy Execution
+      sub_techniques:
+        - id: T1218.001
+        - id: T1218.002
+        - id: T1218.003
+        - id: T1218.004
+        - id: T1218.005
+        - id: T1218.006
+        - id: T1218.007
+        - id: T1218.008
+        - id: T1218.009
+        - id: T1218.010
+        - id: T1218.011
+        - id: T1218.012
+        - id: T1218.013
+        - id: T1218.014
+
+    - id: T1216
+      name: System Script Proxy Execution
+      sub_techniques:
+        - id: T1216.001
+        - id: T1216.002
+
+    - id: T1205
+      name: Traffic Signaling
+      sub_techniques:
+        - id: T1205.001
+        - id: T1205.002
+
+    - id: T1127
+      name: Trusted Developer Utilities Proxy Execution
+      sub_techniques:
+        - id: T1127.001
+        - id: T1127.002
+        - id: T1127.003
+
+    - id: T1550
+      name: Use Alternate Authentication Material
+      sub_techniques:
+        - id: T1550.001
+        - id: T1550.002
+        - id: T1550.003
+        - id: T1550.004
+
+    - id: T1078
+      name: Valid Accounts
+      sub_techniques:
+        - id: T1078.001
+        - id: T1078.002
+        - id: T1078.003
+        - id: T1078.004
+
+    - id: T1497
+      name: Virtualization / Sandbox Evasion
+      sub_techniques:
+        - id: T1497.001
+        - id: T1497.002
+        - id: T1497.003
+
+    - id: T1600
+      name: Weaken Encryption
+      sub_techniques:
+        - id: T1600.001
+        - id: T1600.002
+
+    - id: T1220
+      name: XSL Script Processing
+      sub_techniques: []
 
 - id: credential_access
   mitre: TA0006
@@ -948,93 +1063,127 @@ behaviors:
     authentication tokens, certificates, or cryptographic material. These techniques
     enable adversaries to reuse legitimate credentials for lateral movement,
     privilege escalation, persistence, and cloud identity takeover.
-  techniques:
-    - T1557  # Adversary-in-the-Middle
-    - T1110  # Brute Force
-    - T1555  # Credentials from Password Stores
-    - T1212  # Exploitation for Credential Access
-    - T1187  # Forced Authentication
-    - T1606  # Forge Web Credentials
-    - T1056  # Input Capture
-    - T1556  # Modify Authentication Process
-    - T1621  # Multi-Factor Authentication Interception
-    - T1622  # Multi-Factor Authentication Request Generation
-    - T1040  # Network Sniffing
-    - T1003  # OS Credential Dumping
-    - T1528  # Steal Application Access Token
-    - T1649  # Steal or Forge Authentication Certificates
-    - T1558  # Steal or Forge Kerberos Tickets
-    - T1539  # Steal Web Session Cookie
-    - T1552  # Unsecured Credentials
-  sub-techniques:
-    # Adversary-in-the-Middle (4)
-    - T1557.001  # LLMNR/NBT-NS Poisoning and SMB Relay
-    - T1557.002  # ARP Cache Poisoning
-    - T1557.003  # DHCP Spoofing
-    - T1557.004  # Evil Twin
-
-    # Brute Force (4)
-    - T1110.001  # Password Guessing
-    - T1110.002  # Password Cracking
-    - T1110.003  # Password Spraying
-    - T1110.004  # Credential Stuffing
-
-    # Credentials from Password Stores (6)
-    - T1555.001  # Keychain
-    - T1555.002  # Securityd Memory
-    - T1555.003  # Credentials from Web Browsers
-    - T1555.004  # Windows Credential Manager
-    - T1555.005  # Password Managers
-    - T1555.006  # Cloud Secrets Management Stores
-
-    # Forge Web Credentials (2)
-    - T1606.001  # Web Cookies
-    - T1606.002  # SAML Tokens
-
-    # Input Capture (4)
-    - T1056.001  # Keylogging
-    - T1056.002  # GUI Input Capture
-    - T1056.003  # Web Portal Capture
-    - T1056.004  # Credential API Hooking
-
-    # Modify Authentication Process (9)
-    - T1556.001
-    - T1556.002
-    - T1556.003
-    - T1556.004
-    - T1556.005
-    - T1556.006
-    - T1556.007
-    - T1556.008
-    - T1556.009
-
-    # OS Credential Dumping (8)
-    - T1003.001  # LSASS Memory
-    - T1003.002  # Security Account Manager
-    - T1003.003  # NTDS
-    - T1003.004  # LSA Secrets
-    - T1003.005  # Cached Domain Credentials
-    - T1003.006  # DCSync
-    - T1003.007  # Proc Filesystem
-    - T1003.008  # /etc/passwd and /etc/shadow
-
-    # Steal or Forge Kerberos Tickets (5)
-    - T1558.001  # Golden Ticket
-    - T1558.002  # Silver Ticket
-    - T1558.003  # Kerberoasting
-    - T1558.004  # AS-REP Roasting
-    - T1558.005  # Skeleton Key
-
-    # Unsecured Credentials (8)
-    - T1552.001  # Credentials In Files
-    - T1552.002  # Credentials in Registry
-    - T1552.003  # Bash History
-    - T1552.004  # Private Keys
-    - T1552.005  # Cloud Instance Metadata API
-    - T1552.006  # Group Policy Preferences
-    - T1552.007  # Container API
-    - T1552.008  # Chat Logs
   severity_weight: 8
+
+  techniques:
+    - id: T1557
+      name: Adversary-in-the-Middle
+      sub_techniques:
+        - id: T1557.001  # LLMNR/NBT-NS Poisoning and SMB Relay
+        - id: T1557.002  # ARP Cache Poisoning
+        - id: T1557.003  # DHCP Spoofing
+        - id: T1557.004  # Evil Twin
+
+    - id: T1110
+      name: Brute Force
+      sub_techniques:
+        - id: T1110.001  # Password Guessing
+        - id: T1110.002  # Password Cracking
+        - id: T1110.003  # Password Spraying
+        - id: T1110.004  # Credential Stuffing
+
+    - id: T1555
+      name: Credentials from Password Stores
+      sub_techniques:
+        - id: T1555.001  # Keychain
+        - id: T1555.002  # Securityd Memory
+        - id: T1555.003  # Credentials from Web Browsers
+        - id: T1555.004  # Windows Credential Manager
+        - id: T1555.005  # Password Managers
+        - id: T1555.006  # Cloud Secrets Management Stores
+
+    - id: T1212
+      name: Exploitation for Credential Access
+      sub_techniques: []
+
+    - id: T1187
+      name: Forced Authentication
+      sub_techniques: []
+
+    - id: T1606
+      name: Forge Web Credentials
+      sub_techniques:
+        - id: T1606.001  # Web Cookies
+        - id: T1606.002  # SAML Tokens
+
+    - id: T1056
+      name: Input Capture
+      sub_techniques:
+        - id: T1056.001  # Keylogging
+        - id: T1056.002  # GUI Input Capture
+        - id: T1056.003  # Web Portal Capture
+        - id: T1056.004  # Credential API Hooking
+
+    - id: T1556
+      name: Modify Authentication Process
+      sub_techniques:
+        - id: T1556.001
+        - id: T1556.002
+        - id: T1556.003
+        - id: T1556.004
+        - id: T1556.005
+        - id: T1556.006
+        - id: T1556.007
+        - id: T1556.008
+        - id: T1556.009
+
+    - id: T1621
+      name: Multi-Factor Authentication Interception
+      sub_techniques: []
+
+    - id: T1622
+      name: Multi-Factor Authentication Request Generation
+      sub_techniques: []
+
+    - id: T1040
+      name: Network Sniffing
+      sub_techniques: []
+
+    - id: T1003
+      name: OS Credential Dumping
+      sub_techniques:
+        - id: T1003.001  # LSASS Memory
+        - id: T1003.002  # Security Account Manager
+        - id: T1003.003  # NTDS
+        - id: T1003.004  # LSA Secrets
+        - id: T1003.005  # Cached Domain Credentials
+        - id: T1003.006  # DCSync
+        - id: T1003.007  # Proc Filesystem
+        - id: T1003.008  # /etc/passwd and /etc/shadow
+
+    - id: T1528
+      name: Steal Application Access Token
+      sub_techniques: []
+
+    - id: T1649
+      name: Steal or Forge Authentication Certificates
+      sub_techniques: []
+
+    - id: T1558
+      name: Steal or Forge Kerberos Tickets
+      sub_techniques:
+        - id: T1558.001  # Golden Ticket
+        - id: T1558.002  # Silver Ticket
+        - id: T1558.003  # Kerberoasting
+        - id: T1558.004  # AS-REP Roasting
+        - id: T1558.005  # Skeleton Key
+
+    - id: T1539
+      name: Steal Web Session Cookie
+      sub_techniques: []
+
+    - id: T1552
+      name: Unsecured Credentials
+      sub_techniques:
+        - id: T1552.001  # Credentials In Files
+        - id: T1552.002  # Credentials in Registry
+        - id: T1552.003  # Bash History
+        - id: T1552.004  # Private Keys
+        - id: T1552.005  # Cloud Instance Metadata API
+        - id: T1552.006  # Group Policy Preferences
+        - id: T1552.007  # Container API
+        - id: T1552.008  # Chat Logs
+
 
 - id: discovery
   mitre: TA0007
@@ -1043,69 +1192,156 @@ behaviors:
     Adversaries attempt to gain knowledge about the system, network, cloud,
     container, identity, and user environment to understand where they are,
     what assets exist, and how to move laterally or escalate privileges.
-  techniques:
-    - T1087  # Account Discovery
-    - T1010  # Application Window Discovery
-    - T1217  # Browser Information Discovery
-    - T1580  # Cloud Infrastructure Discovery
-    - T1538  # Cloud Service Dashboard
-    - T1526  # Cloud Service Discovery
-    - T1619  # Cloud Storage Object Discovery
-    - T1613  # Container and Resource Discovery
-    - T1622  # Debugger Evasion
-    - T1652  # Device Driver Discovery
-    - T1482  # Domain Trust Discovery
-    - T1083  # File and Directory Discovery
-    - T1615  # Group Policy Discovery
-    - T1005  # Local Storage Discovery
-    - T1654  # Log Enumeration
-    - T1046  # Network Service Discovery
-    - T1135  # Network Share Discovery
-    - T1040  # Network Sniffing
-    - T1201  # Password Policy Discovery
-    - T1120  # Peripheral Device Discovery
-    - T1069  # Permission Groups Discovery
-    - T1057  # Process Discovery
-    - T1012  # Query Registry
-    - T1018  # Remote System Discovery
-    - T1  # Software Discovery
-    - T1082  # System Information Discovery
-    - T1614  # System Location Discovery
-    - T1016  # System Network Configuration Discovery
-    - T1049  # System Network Connections Discovery
-    - T1033  # System Owner/User Discovery
-    - T1007  # System Service Discovery
-    - T1124  # System Time Discovery
-    - T1497  # Virtual Machine Discovery
-    - T1497  # Virtualization/Sandbox Evasion
-  sub-techniques:
-    # Account Discovery (4)
-    - T1087.001  # Local Account
-    - T1087.002  # Domain Account
-    - T1087.003  # Email Account
-    - T1087.004  # Cloud Account
-
-    # Permission Groups Discovery (3)
-    - T1069.001  # Local Groups
-    - T1069.002  # Domain Groups
-    - T1069.003  # Cloud Groups
-
-    # Software Discovery (2)
-    - T1518.001  # Security Software Discovery
-    - T1518.002  # Installed Software Discovery
-
-    # System Location Discovery (1)
-    - T1614.001  # System Language Discovery
-
-    # System Network Configuration Discovery (2)
-    - T1016.001  # Internet Connection Discovery
-    - T1016.002  # Wi-Fi Discovery
-
-    # Virtualization / Sandbox Evasion (3)
-    - T1497.001  # System Checks
-    - T1497.002  # User Activity Based Checks
-    - T1497.003  # Time Based Evasion
   severity_weight: 6
+
+  techniques:
+    - id: T1087
+      name: Account Discovery
+      sub_techniques:
+        - id: T1087.001  # Local Account
+        - id: T1087.002  # Domain Account
+        - id: T1087.003  # Email Account
+        - id: T1087.004  # Cloud Account
+
+    - id: T1010
+      name: Application Window Discovery
+      sub_techniques: []
+
+    - id: T1217
+      name: Browser Information Discovery
+      sub_techniques: []
+
+    - id: T1580
+      name: Cloud Infrastructure Discovery
+      sub_techniques: []
+
+    - id: T1538
+      name: Cloud Service Dashboard
+      sub_techniques: []
+
+    - id: T1526
+      name: Cloud Service Discovery
+      sub_techniques: []
+
+    - id: T1619
+      name: Cloud Storage Object Discovery
+      sub_techniques: []
+
+    - id: T1613
+      name: Container and Resource Discovery
+      sub_techniques: []
+
+    - id: T1622
+      name: Debugger Evasion
+      sub_techniques: []
+
+    - id: T1652
+      name: Device Driver Discovery
+      sub_techniques: []
+
+    - id: T1482
+      name: Domain Trust Discovery
+      sub_techniques: []
+
+    - id: T1083
+      name: File and Directory Discovery
+      sub_techniques: []
+
+    - id: T1615
+      name: Group Policy Discovery
+      sub_techniques: []
+
+    - id: T1005
+      name: Local Storage Discovery
+      sub_techniques: []
+
+    - id: T1654
+      name: Log Enumeration
+      sub_techniques: []
+
+    - id: T1046
+      name: Network Service Discovery
+      sub_techniques: []
+
+    - id: T1135
+      name: Network Share Discovery
+      sub_techniques: []
+
+    - id: T1040
+      name: Network Sniffing
+      sub_techniques: []
+
+    - id: T1201
+      name: Password Policy Discovery
+      sub_techniques: []
+
+    - id: T1120
+      name: Peripheral Device Discovery
+      sub_techniques: []
+
+    - id: T1069
+      name: Permission Groups Discovery
+      sub_techniques:
+        - id: T1069.001  # Local Groups
+        - id: T1069.002  # Domain Groups
+        - id: T1069.003  # Cloud Groups
+
+    - id: T1057
+      name: Process Discovery
+      sub_techniques: []
+
+    - id: T1012
+      name: Query Registry
+      sub_techniques: []
+
+    - id: T1018
+      name: Remote System Discovery
+      sub_techniques: []
+
+    - id: T1518
+      name: Software Discovery
+      sub_techniques:
+        - id: T1518.001  # Security Software Discovery
+        - id: T1518.002  # Installed Software Discovery
+
+    - id: T1082
+      name: System Information Discovery
+      sub_techniques: []
+
+    - id: T1614
+      name: System Location Discovery
+      sub_techniques:
+        - id: T1614.001  # System Language Discovery
+
+    - id: T1016
+      name: System Network Configuration Discovery
+      sub_techniques:
+        - id: T1016.001  # Internet Connection Discovery
+        - id: T1016.002  # Wi-Fi Discovery
+
+    - id: T1049
+      name: System Network Connections Discovery
+      sub_techniques: []
+
+    - id: T1033
+      name: System Owner/User Discovery
+      sub_techniques: []
+
+    - id: T1007
+      name: System Service Discovery
+      sub_techniques: []
+
+    - id: T1124
+      name: System Time Discovery
+      sub_techniques: []
+
+    - id: T1497
+      name: Virtualization / Sandbox Evasion
+      sub_techniques:
+        - id: T1497.001  # System Checks
+        - id: T1497.002  # User Activity Based Checks
+        - id: T1497.003  # Time Based Evasion
+
 
 - id: lateral_movement
   mitre: TA0008
@@ -1115,37 +1351,59 @@ behaviors:
     additional systems, accounts, or resources. Lateral movement enables
     attackers to expand control, reach high-value assets, and prepare
     for impact operations.
-  techniques:
-    - T1210  # Exploitation of Remote Services
-    - T1534  # Internal Spearphishing
-    - T1570  # Lateral Tool Transfer
-    - T1563  # Remote Service Session Hijacking
-    - T1021  # Remote Services
-    - T1091  # Replication Through Removable Media
-    - T1072  # Software Deployment Tools
-    - T1080  # Taint Shared Content
-    - T1550  # Use Alternate Authentication Material
-  sub-techniques:
-    # Remote Service Session Hijacking (2)
-    - T1563.001  # SSH Hijacking
-    - T1563.002  # RDP Hijacking
-
-    # Remote Services (8)
-    - T1021.001  # Remote Desktop Protocol
-    - T1021.002  # SMB / Windows Admin Shares
-    - T1021.003  # Distributed Component Object Model (DCOM)
-    - T1021.004  # SSH
-    - T1021.005  # VNC
-    - T1021.006  # Windows Remote Management
-   1021.007  # Cloud Services
-    - T1021.008  # Direct Cloud VM Access
-
-    # Use Alternate Authentication Material (4)
-    - T1550.001  # Application Access Token
-    - T1550.002  # Pass the Hash
-    - T1550.003  # Pass the Ticket
-    - T1550.004  # Web Session Cookie
   severity_weight: 8
+
+  techniques:
+    - id: T1210
+      name: Exploitation of Remote Services
+      sub_techniques: []
+
+    - id: T1534
+      name: Internal Spearphishing
+      sub_techniques: []
+
+    - id: T1570
+      name: Lateral Tool Transfer
+      sub_techniques: []
+
+    - id: T1563
+      name: Remote Service Session Hijacking
+      sub_techniques:
+        - id: T1563.001  # SSH Hijacking
+        - id: T1563.002  # RDP Hijacking
+
+    - id: T1021
+      name: Remote Services
+      sub_techniques:
+        - id: T1021.001  # Remote Desktop Protocol
+        - id: T1021.002  # SMB / Windows Admin Shares
+        - id: T1021.003  # Distributed Component Object Model (DCOM)
+        - id: T1021.004  # SSH
+        - id: T1021.005  # VNC
+        - id: T1021.006  # Windows Remote Management
+        - id: T1021.007  # Cloud Services
+        - id: T1021.008  # Direct Cloud VM Access
+
+    - id: T1091
+      name: Replication Through Removable Media
+      sub_techniques: []
+
+    - id: T1072
+      name: Software Deployment Tools
+      sub_techniques: []
+
+    - id: T1080
+      name: Taint Shared Content
+      sub_techniques: []
+
+    - id: T1550
+      name: Use Alternate Authentication Material
+      sub_techniques:
+        - id: T1550.001  # Application Access Token
+        - id: T1550.002  # Pass the Hash
+        - id: T1550.003  # Pass the Ticket
+        - id: T1550.004  # Web Session Cookie
+
 
 - id: collection
   mitre: TA0009
@@ -1155,63 +1413,101 @@ behaviors:
     services, containers, and user activity. Collected data may be staged,
     archived, or prepared for exfiltration to support espionage, extortion,
     or further operations.
-  techniques:
-    - T1557  # Adversary-in-the-Middle
-    - T1560  # Archive Collected Data
-    - T1123  # Audio Capture
-    - T1119  # Automated Collection
-    - T1185  # Browser Session Hijacking
-    - T1115  # Clipboard Data
-    - T1530  # Data from Cloud Storage
-    - T1602  # Data from Configuration Repository
-    - T1213  # Data from Information Repositories
-    - T1005  # Data from Local System
-    - T1039  # Data from Network Shared Drive
-    - T1025  # Data from Removable Media
-    - T1074  # Data Staged
-    - T1114  # Email Collection
-    - T1056  # Input Capture
-    - T1113  # Screen Capture
-    - T1125  # Video Capture
-  sub-techniques:
-    # Adversary-in-the-Middle (4)
-    - T1557.001  # LLMNR/NBT-NS Poisoning and SMB Relay
-    - T1557.002  # ARP Cache Poisoning
-    - T1557.003  # DHCP Spoofing
-    - T1557.004  # Evil Twin
-
-    # Archive Collected Data (3)
-    - T1560.001  # Archive via Utility
-    - T1560.002  # Archive via Library
-    - T1560.003  # Archive via Custom Method
-
-    # Data from Configuration Repository (2)
-    - T1602.001  # SNMP (MIB Dump)
-    - T1602.002  # Network Device Configuration Dump
-
-    # Data from Information Repositories (6)
-    - T1213.001  # Confluence
-    - T1213.002  # SharePoint
-    - T1213.003  # Code Repositories
-    - T1213.004  # Email Repositories
-    - T1213.005  # Ticketing Systems
-    - T1213.006  # Wiki Repositories
-
-    # Data Staged (2)
-    - T1074.001  # Local Data Staging
-    - T1074.002  # Remote Data Staging
-
-    # Email Collection (3)
-    - T1114.001  # Local Email Collection
-    - T1114.002  # Remote Email Collection
-    - T1114.003  # Email Forwarding Rule
-
-    # Input Capture (4)
-    - T1056.001  # Keylogging
-    - T1056.002  # GUI Input Capture
-    - T1056.003  # Web Portal Capture
-    - T1056.004  # Credential API Hooking
   severity_weight: 7
+
+  techniques:
+    - id: T1557
+      name: Adversary-in-the-Middle
+      sub_techniques:
+        - id: T1557.001  # LLMNR/NBT-NS Poisoning and SMB Relay
+        - id: T1557.002  # ARP Cache Poisoning
+        - id: T1557.003  # DHCP Spoofing
+        - id: T1557.004  # Evil Twin
+
+    - id: T1560
+      name: Archive Collected Data
+      sub_techniques:
+        - id: T1560.001  # Archive via Utility
+        - id: T1560.002  # Archive via Library
+        - id: T1560.003  # Archive via Custom Method
+
+    - id: T1123
+      name: Audio Capture
+      sub_techniques: []
+
+    - id: T1119
+      name: Automated Collection
+      sub_techniques: []
+
+    - id: T1185
+      name: Browser Session Hijacking
+      sub_techniques: []
+
+    - id: T1115
+      name: Clipboard Data
+      sub_techniques: []
+
+    - id: T1530
+      name: Data from Cloud Storage
+      sub_techniques: []
+
+    - id: T1602
+      name: Data from Configuration Repository
+      sub_techniques:
+        - id: T1602.001  # SNMP (MIB Dump)
+        - id: T1602.002  # Network Device Configuration Dump
+
+    - id: T1213
+      name: Data from Information Repositories
+      sub_techniques:
+        - id: T1213.001  # Confluence
+        - id: T1213.002  # SharePoint
+        - id: T1213.003  # Code Repositories
+        - id: T1213.004  # Email Repositories
+        - id: T1213.005  # Ticketing Systems
+        - id: T1213.006  # Wiki Repositories
+
+    - id: T1005
+      name: Data from Local System
+      sub_techniques: []
+
+    - id: T1039
+      name: Data from Network Shared Drive
+      sub_techniques: []
+
+    - id: T1025
+      name: Data from Removable Media
+      sub_techniques: []
+
+    - id: T1074
+      name: Data Staged
+      sub_techniques:
+        - id: T1074.001  # Local Data Staging
+        - id: T1074.002  # Remote Data Staging
+
+    - id: T1114
+      name: Email Collection
+      sub_techniques:
+        - id: T1114.001  # Local Email Collection
+        - id: T1114.002  # Remote Email Collection
+        - id: T1114.003  # Email Forwarding Rule
+
+    - id: T1056
+      name: Input Capture
+      sub_techniques:
+        - id: T1056.001  # Keylogging
+        - id: T1056.002  # GUI Input Capture
+        - id: T1056.003  # Web Portal Capture
+        - id: T1056.004  # Credential API Hooking
+
+    - id: T1113
+      name: Screen Capture
+      sub_techniques: []
+
+    - id: T1125
+      name: Video Capture
+      sub_techniques: []
+
 
 - id: command_and_control
   mitre: TA0011
@@ -1221,169 +1517,194 @@ behaviors:
     to send commands, receive data, and dynamically control operations.
     C2 channels are designed to blend with legitimate traffic, resist blocking,
     and survive partial takedown.
-  techniques:
-    - T1071  # Application Layer Protocol
-    - T1092  # Communication Through Removable Media
-    - T1659  # Content Injection
-    - T1132  # Data Encoding
-    - T1001  # Data Obfuscation
-    - T1568  # Dynamic Resolution
-    - T1573  # Encrypted Channel
-    - T1008  # Fallback Channels
-    - T1665  # Hide Infrastructure
-    - T1105  # Ingress Tool Transfer
-    - T1104  # Multi-Stage Channels
-    - T1095  # Non-Application Layer Protocol
-    - T1571  # Non-Standard Port
-    - T1572  # Protocol Tunneling
-    - T1090  # Proxy
-    - T1219  # Remote Access Tools
-    - T1205  # Traffic Signaling
-    - T1102  # Web Service
-  sub-techniques:
-    # Application Layer Protocol (5)
-    - T1071.001  # Web Protocols (HTTP/HTTPS)
-    - T1071.002  # File Transfer Protocols (FTP/SFTP)
-    - T1071.003  # Mail Protocols (SMTP/IMAP/POP3)
-    - T1071.004  # DNS
-    - T1071.005  # Cloud Services APIs
-
-    # Data Encoding (2)
-    - T1132.001  # Standard Encoding (Base64, JSON)
-    - T1132.002  # Non-Standard Encoding
-
-    # Data Obfuscation (3)
-    - T1001.001  # Junk Data Padding
-    - T1001.002  # Steganography
-    - T1001.003  # Protocol Impersonation
-
-    # Dynamic Resolution (3)
-    - T1568.001  # Fast Flux DNS
-    - T1568.002  # Domain Generation Algorithms (DGA)
-    - T1568.003  # DNS Calculation
-
-    # Encrypted Channel (2)
-    - T1573.001  # Symmetric Cryptography
-    - T1573.002  # Asymmetric Cryptography
-
-    # Proxy (4)
-    - T1090.001  # Internal Proxy
-    - T1090.002  # External Proxy
-    - T1090.003  # Multi-hop Proxy
-    - T1090.004  # Domain Fronting
-
-    # Remote Access Tools (3)
-    - T1219.001  # Commercial RATs
-    - T1219.002  # Open-Source RATs
-    - T1219.003  # Custom Remote Access Tools
-
-    # Traffic Signaling (2)
-    - T1205.001  # Port Knocking
-    - T1205.002  # Dead Drop Resolver
-
-    # Web Service (3)
-    - T1102.001  # Dead Drop Resolver
-    - T1102.002  # Bidirectional Communication
-    - T1102.003  # One-Way Communication
   severity_weight: 9
 
-- id: exfiltration
-  mitre: TA0010
-  name: Exfiltration
-  description: >
-    Adversaries steal data from compromised systems, networks, or cloud
-    environments. Exfiltration techniques focus on transferring collected
-    data outside of the victim environment while avoiding detection by
-    blending with normal traffic or using covert channels.
   techniques:
-    - T1020  # Automated Exfiltration
-    - T1030  # Data Transfer Size Limits
-    - T1048  # Exfiltration Over Alternative Protocol
-    - T1041  # Exfiltration Over C2 Channel
-    - T1011  # Exfiltration Over Other Network Medium
-    - T1052  # Exfiltration Over Physical Medium
-    - T1567  # Exfiltration Over Web Service
-    - T1029  # Scheduled Transfer
-    - T1537  # Transfer Data to Cloud Account
-  sub-techniques:
-    # Automated Exfiltration (1)
-    - T1020.001  # Automated Data Transfer
+    - id: T1071
+      name: Application Layer Protocol
+      sub_techniques:
+        - id: T1071.001  # Web Protocols (HTTP/HTTPS)
+        - id: T1071.002  # File Transfer Protocols (FTP/SFTP)
+        - id: T1071.003  # Mail Protocols (SMTP/IMAP/POP3)
+        - id: T1071.004  # DNS
+        - id: T1071.005  # Cloud Services APIs
 
-    # Exfiltration Over Alternative Protocol (3)
-    - T1048.001  # Exfiltration Over Symmetric Encrypted Non-C2 Protocol
-    - T1048.002  # Exfiltration Over Asymmetric Encrypted Non-C2 Protocol
-    - T1048.003  # Exfiltration Over Unencrypted / Obfuscated Non-C2 Protocol
+    - id: T1092
+      name: Communication Through Removable Media
+      sub_techniques: []
 
-    # Exfiltration Over Other Network Medium (1)
-    - T1011.001  # Exfiltration Over Bluetooth / Radio / Cellular
+    - id: T1659
+      name: Content Injection
+      sub_techniques: []
 
-    # Exfiltration Over Physical Medium (1)
-    - T1052.001  # Exfiltration via USB / Removable Media
+    - id: T1132
+      name: Data Encoding
+      sub_techniques:
+        - id: T1132.001  # Standard Encoding (Base64, JSON)
+        - id: T1132.002  # Non-Standard Encoding
 
-    # Exfiltration Over Web Service (4)
-    - T1567.001  # Exfiltration to Cloud Storage
-    - T1567.002  # Exfiltration to Code Repositories
-    - T1567.003  # Exfiltration to Social Media
-    - T1567.004  # Exfiltration via Webmail
-  severity_weight: 8
+    - id: T1001
+      name: Data Obfuscation
+      sub_techniques:
+        - id: T1001.001  # Junk Data Padding
+        - id: T1001.002  # Steganography
+        - id: T1001.003  # Protocol Impersonation
+
+    - id: T1568
+      name: Dynamic Resolution
+      sub_techniques:
+        - id: T1568.001  # Fast Flux DNS
+        - id: T1568.002  # Domain Generation Algorithms (DGA)
+        - id: T1568.003  # DNS Calculation
+
+    - id: T1573
+      name: Encrypted Channel
+      sub_techniques:
+        - id: T1573.001  # Symmetric Cryptography
+        - id: T1573.002  # Asymmetric Cryptography
+
+    - id: T1008
+      name: Fallback Channels
+      sub_techniques: []
+
+    - id: T1665
+      name: Hide Infrastructure
+      sub_techniques: []
+
+    - id: T1105
+      name: Ingress Tool Transfer
+      sub_techniques: []
+
+    - id: T1104
+      name: Multi-Stage Channels
+      sub_techniques: []
+
+    - id: T1095
+      name: Non-Application Layer Protocol
+      sub_techniques: []
+
+    - id: T1571
+      name: Non-Standard Port
+      sub_techniques: []
+
+    - id: T1572
+      name: Protocol Tunneling
+      sub_techniques: []
+
+    - id: T1090
+      name: Proxy
+      sub_techniques:
+        - id: T1090.001  # Internal Proxy
+        - id: T1090.002  # External Proxy
+        - id: T1090.003  # Multi-hop Proxy
+        - id: T1090.004  # Domain Fronting
+
+    - id: T1219
+      name: Remote Access Tools
+      sub_techniques:
+        - id: T1219.001  # Commercial RATs
+        - id: T1219.002  # Open-Source RATs
+        - id: T1219.003  # Custom Remote Access Tools
+
+    - id: T1205
+      name: Traffic Signaling
+      sub_techniques:
+        - id: T1205.001  # Port Knocking
+        - id: T1205.002  # Dead Drop Resolver
+
+    - id: T1102
+      name: Web Service
+      sub_techniques:
+        - id: T1102.001  # Dead Drop Resolver
+        - id: T1102.002  # Bidirectional Communication
+        - id: T1102.003  # One-Way Communication
+
 
 - id: impact
   mitre: TA0040
   name: Impact
   description: >
-    Adversaries take actions to manipulate, disrupt, or destroy systems,
-    data, and services to achieve their final objectives. Impact techniques
-    result in operational disruption, financial loss, reputational damage,
-    or permanent data loss.
-  techniques:
-    - T1531  # Account Access Removal
-    - T1485  # Data Destruction
-    - T1486  # Data Encrypted for Impact
-    - T1565  # Data Manipulation
-    - T1491  # Defacement
-    - T1561  # Disk Wipe
-    - T1592  # Email Bombing
-    - T1499  # Endpoint Denial of Service
-    - T1657  # Financial Theft
-    - T1495  # Firmware Corruption
-    - T1490  # Inhibit System Recovery
-    - T1498  # Network Denial of Service
-    - T1496  # Resource Hijacking
-    - T1489  # Service Stop
-    - T1529  # System Shutdown/Reboot
-  sub-techniques:
-    # Account Access Removal
-    - T1531  # Disable / Delete Accounts, Tokens, Keys
-
-    # Data Destruction (1)
-    - T1485.001  # Logical Data Destruction
-
-    # Data Manipulation (3)
-    - T1565.001  # Stored Data Manipulation
-    - T1565.002  # Transmitted Data Manipulation
-    - T1565.003  # Runtime Data Manipulation
-
-    # Defacement (2)
-    - T1491.001  # Internal Defacement
-    - T1491.002  # External Defacement
-
-    # Disk Wipe (2)
-    - T1561.001  # Disk Content Wipe
-    - T1561.002  # Disk Structure Wipe
-
-    # Endpoint Denial of Service (4)
-    - T1499.001  # OS Resource Exhaustion
-    - T1499.002  # Service Exhaustion
-    - T1499.003  # Application Exhaustion
-    - T1499.004  # Network Bandwidth Exhaustion
-
-    # Network Denial of Service (2)
-    - T1498.001  # Direct Network Flood
-    - T1498.002  # Reflection Amplification
-
-    # Resource Hijacking (4)
-    - T1496.001  # Cryptocurrency Mining
-    - T1496.002  # Cloud Resource Abuse
-    - T1496.003  # Container Resource Hijacking
-    - T1496.004  # Serverless Function Abuse
+    Adversaries take actions that directly harm the victim organization by
+    disrupting availability, destroying or manipulating data, causing
+    financial loss, or damaging systems and services. Impact represents the
+    final stage of the attack lifecycle where objectives are realized.
   severity_weight: 9
+
+  techniques:
+    - id: T1531
+      name: Account Access Removal
+      sub_techniques: []
+
+    - id: T1485
+      name: Data Destruction
+      sub_techniques:
+        - id: T1485.001  # Logical Data Destruction
+
+    - id: T1486
+      name: Data Encrypted for Impact
+      sub_techniques: []
+
+    - id: T1565
+      name: Data Manipulation
+      sub_techniques:
+        - id: T1565.001  # Stored Data Manipulation
+        - id: T1565.002  # Transmitted Data Manipulation
+        - id: T1565.003  # Runtime Data Manipulation
+
+    - id: T1491
+      name: Defacement
+      sub_techniques:
+        - id: T1491.001  # Internal Defacement
+        - id: T1491.002  # External Defacement
+
+    - id: T1561
+      name: Disk Wipe
+      sub_techniques:
+        - id: T1561.001  # Disk Content Wipe
+        - id: T1561.002  # Disk Structure Wipe
+
+    - id: T1592
+      name: Email Bombing
+      sub_techniques: []
+
+    - id: T1499
+      name: Endpoint Denial of Service
+      sub_techniques:
+        - id: T1499.001  # OS Resource Exhaustion
+        - id: T1499.002  # Service Exhaustion
+        - id: T1499.003  # Application Exhaustion
+        - id: T1499.004  # Network Bandwidth Exhaustion
+
+    - id: T1657
+      name: Financial Theft
+      sub_techniques: []
+
+    - id: T1495
+      name: Firmware Corruption
+      sub_techniques: []
+
+    - id: T1490
+      name: Inhibit System Recovery
+      sub_techniques: []
+
+    - id: T1498
+      name: Network Denial of Service
+      sub_techniques:
+        - id: T1498.001  # Direct Network Flood
+        - id: T1498.002  # Reflection Amplification
+
+    - id: T1496
+      name: Resource Hijacking
+      sub_techniques:
+        - id: T1496.001  # Cryptocurrency Mining
+        - id: T1496.002  # Cloud Resource Abuse
+        - id: T1496.003  # Container Resource Hijacking
+        - id: T1496.004  # Serverless Function Abuse
+
+    - id: T1489
+      name: Service Stop
+      sub_techniques: []
+
+    - id: T1529
+      name: System Shutdown/Reboot
+      sub_techniques: []
