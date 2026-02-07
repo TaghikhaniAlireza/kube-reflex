@@ -6,14 +6,14 @@ import "strings"
 func ScoreFromPriority(priority string) int {
 	switch strings.ToLower(priority) {
 	case "info":
-		return 1
+		return 15
 	case "notice":
-		return 2
+		return 35
 	case "warning":
-		return 5
+		return 60
 	case "critical":
-		return 10
+		return 100
 	default:
-		return 0
+		return 5
 	}
 }

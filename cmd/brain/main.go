@@ -1,4 +1,4 @@
-//cmd/brain/main.go
+// cmd/brain/main.go
 package main
 
 import (
@@ -21,10 +21,14 @@ func main() {
 
 	ctx := context.Background()
 
-	// 1. migrations
+	// ------------------------------------------------------------------
+	// 1. Run DB migrations
+	// ------------------------------------------------------------------
 	db.RunMigrations()
 
-	// 2. database
+	// ------------------------------------------------------------------
+	// 2. Postgres connection
+	// ------------------------------------------------------------------
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is not set")
@@ -38,25 +42,35 @@ func main() {
 
 	falcoRepo := db.NewFalcoRepository(pool)
 
-	// 3. redis
+	// ------------------------------------------------------------------
+	// 3. Redis connection
+	// ------------------------------------------------------------------
 	redisClient, err := redisinfra.NewRedisClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 	redisRepo := redisinfra.NewRepository(redisClient)
 
-	// 4. ingest with brain hook
+	// ------------------------------------------------------------------
+	// 4. Falco ingest + Brain hook
+	// ------------------------------------------------------------------
 	err = falco.IngestFromFile(
 		ctx,
 		"/app/falco_sample_log.txt",
 		falcoRepo,
 		func(event falco.Event) {
 
+			// ----------------------------------------------------------
+			// 4.1 Static scoring (priority-based)
+			// ----------------------------------------------------------
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
 				return
 			}
 
+			// ----------------------------------------------------------
+			// 4.2 Identity extraction
+			// ----------------------------------------------------------
 			identity := parser.ExtractIdentity(event.OutputFields)
 
 			if identity.ContainerID == "" {
@@ -64,15 +78,55 @@ func main() {
 				return
 			}
 
-			err := redisRepo.UpdateContainerState(
+			// ----------------------------------------------------------
+			// 4.3 Update container snapshot (state)
+			// ----------------------------------------------------------
+			if err := redisRepo.UpdateContainerState(
 				ctx,
 				identity,
 				score,
-				10*time.Minute,
-			)
-			if err != nil {
-				log.Printf("redis error: %v", err)
+				15*time.Minute,
+			); err != nil {
+				log.Printf("redis UpdateContainerState error: %v", err)
+				return
 			}
+
+			// ----------------------------------------------------------
+			// 4.4 Add behavioral data (Phase 1 core)
+			// ----------------------------------------------------------
+
+			// Event type (later: enum / normalized type)
+			eventType := event.Rule
+
+			// 1) Temporal stream (ZSET)
+			if err := redisRepo.AddEvent(
+				ctx,
+				identity.ContainerID,
+				eventType,
+				event.Time,
+			); err != nil {
+				log.Printf("redis AddEvent error: %v", err)
+			}
+
+			// 2) Frequency counter (velocity)
+			if err := redisRepo.IncrementFrequency(
+				ctx,
+				identity.ContainerID,
+				eventType,
+				time.Minute,
+			); err != nil {
+				log.Printf("redis IncrementFrequency error: %v", err)
+			}
+
+			// ----------------------------------------------------------
+			// 4.5 Debug log
+			// ----------------------------------------------------------
+			log.Printf(
+				"INGEST container=%s rule=%s score=%d",
+				identity.ContainerID,
+				event.Rule,
+				score,
+			)
 		},
 	)
 

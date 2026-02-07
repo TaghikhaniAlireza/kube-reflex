@@ -67,3 +67,44 @@ func (r *redisRepository) UpdateContainerState(
 
 	return nil
 }
+
+func (r *redisRepository) AddEvent(
+	ctx context.Context,
+	containerID string,
+	eventType string,
+	ts time.Time,
+) error {
+
+	key := "container:" + containerID + ":events"
+	score := float64(ts.Unix())
+
+	err := r.client.ZAdd(ctx, key, redis.Z{
+		Score:  score,
+		Member: eventType,
+	}).Err()
+	if err != nil {
+		return err
+	}
+
+	// TTL event stream
+	r.client.Expire(ctx, key, 10*time.Minute)
+
+	return nil
+}
+
+func (r *redisRepository) IncrementFrequency(
+	ctx context.Context,
+	containerID string,
+	eventType string,
+	ttl time.Duration,
+) error {
+
+	key := "container:" + containerID + ":counters:" + eventType
+
+	if err := r.client.Incr(ctx, key).Err(); err != nil {
+		return err
+	}
+
+	r.client.Expire(ctx, key, ttl)
+	return nil
+}
