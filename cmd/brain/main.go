@@ -11,6 +11,7 @@ import (
 
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
 )
@@ -44,24 +45,31 @@ func main() {
 	}
 	redisRepo := redisinfra.NewRepository(redisClient)
 
-	// 4. ingest with scoring hook
+	// 4. ingest with brain hook
 	err = falco.IngestFromFile(
 		ctx,
 		"/app/falco_sample_log.txt",
 		falcoRepo,
 		func(event falco.Event) {
-			log.Printf(
-				"HOOK CALLED ✅ rule=%q priority=%q",
-				event.Rule,
-				event.Priority,
-			)
+
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
 				return
 			}
 
-			key := "risk:global"
-			_, err := redisRepo.IncrementScore(ctx, key, score, 10*time.Minute)
+			identity := parser.ExtractIdentity(event.OutputFields)
+
+			if identity.ContainerID == "" {
+				log.Println("skip event without container.id")
+				return
+			}
+
+			err := redisRepo.UpdateContainerState(
+				ctx,
+				identity,
+				score,
+				10*time.Minute,
+			)
 			if err != nil {
 				log.Printf("redis error: %v", err)
 			}

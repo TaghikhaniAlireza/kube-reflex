@@ -4,10 +4,15 @@ package redis
 import (
 	"context"
 	"time"
+
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 )
 
 type Repository interface {
-	IncrementScore(ctx context.Context, key string, delta int, ttl time.Duration) (int64, error)
-	GetScore(ctx context.Context, key string) (int64, error)
-	ResetScore(ctx context.Context, key string) error
+	UpdateContainerState(
+		ctx context.Context,
+		identity parser.Identity,
+		scoreDelta int,
+		ttl time.Duration,
+	) error
 }

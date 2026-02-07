@@ -3,9 +3,12 @@ package redis
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 )
 
 type redisRepository struct {
@@ -13,43 +16,54 @@ type redisRepository struct {
 }
 
 func NewRepository(client *redis.Client) Repository {
-	return &redisRepository{client: client}
+	return &redisRepository{
+		client: client,
+	}
 }
 
-func (r *redisRepository) IncrementScore(
+func (r *redisRepository) UpdateContainerState(
 	ctx context.Context,
-	key string,
-	delta int,
+	identity parser.Identity,
+	scoreDelta int,
 	ttl time.Duration,
-) (int64, error) {
-
-	pipe := r.client.TxPipeline()
-
-	incr := pipe.IncrBy(ctx, key, int64(delta))
-	pipe.Expire(ctx, key, ttl)
-
-	if _, err := pipe.Exec(ctx); err != nil {
-		return 0, err
-	}
-
-	return incr.Val(), nil
-}
-
-func (r *redisRepository) GetScore(
-	ctx context.Context,
-	key string,
-) (int64, error) {
-
-	val, err := r.client.Get(ctx, key).Int64()
-	if err == redis.Nil {
-		return 0, nil
-	}
-	return val, err
-}
-
-func (r *redisRepository) ResetScore(
-	ctx context.Context,
-	key string,
 ) error {
-	return r.client.Del(ctx, key).Err()
+
+	key := "container:" + identity.ContainerID
+
+	// ---- increment risk score ----
+	if err := r.client.HIncrBy(ctx, key, "risk_score", int64(scoreDelta)).Err(); err != nil {
+		return err
+	}
+
+	// ---- metadata ----
+	fields := map[string]interface{}{
+		"namespace":      identity.Namespace,
+		"pod":            identity.PodName,
+		"container_name": identity.ContainerName,
+		"image_repo":     identity.ImageRepo,
+		"image_tag":      identity.ImageTag,
+		"user_name":      identity.UserName,
+		"user_uid":       identity.UserUID,
+		"last_seen":      strconv.FormatInt(identity.LastSeen.Unix(), 10),
+	}
+
+	if err := r.client.HSet(ctx, key, fields).Err(); err != nil {
+		return err
+	}
+
+	// ---- runtime behavior ----
+	if identity.ProcExePath != "" {
+		r.client.SAdd(ctx, key+":procs", identity.ProcExePath)
+	}
+
+	if identity.ProcCmdline != "" {
+		r.client.SAdd(ctx, key+":cmdlines", identity.ProcCmdline)
+	}
+
+	// ---- ttl ----
+	r.client.Expire(ctx, key, ttl)
+	r.client.Expire(ctx, key+":procs", ttl)
+	r.client.Expire(ctx, key+":cmdlines", ttl)
+
+	return nil
 }
