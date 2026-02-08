@@ -1,4 +1,5 @@
 // cmd/brain/main.go
+// cmd/brain/main.go
 package main
 
 import (
@@ -9,6 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/alert"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/fsm"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/rules"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/taxonomy"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
@@ -16,7 +19,6 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/fsm"
 )
 
 func main() {
@@ -25,12 +27,12 @@ func main() {
 	ctx := context.Background()
 
 	// ------------------------------------------------------------------
-	// 1. Run DB migrations
+	// 1. DB migrations
 	// ------------------------------------------------------------------
 	db.RunMigrations()
 
 	// ------------------------------------------------------------------
-	// 2. Postgres connection
+	// 2. PostgreSQL
 	// ------------------------------------------------------------------
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -46,7 +48,7 @@ func main() {
 	falcoRepo := db.NewFalcoRepository(pool)
 
 	// ------------------------------------------------------------------
-	// 3. Redis connection
+	// 3. Redis
 	// ------------------------------------------------------------------
 	redisClient, err := redisinfra.NewRedisClient()
 	if err != nil {
@@ -55,9 +57,11 @@ func main() {
 	redisRepo := redisinfra.NewRepository(redisClient)
 
 	// ------------------------------------------------------------------
-	// 4. Load Chain Definitions (NEW – Step 2 result)
+	// 4. Load MITRE Chains
 	// ------------------------------------------------------------------
-	chainLoader := rules.NewChainLoader("internal/correlator/rules/chains.yml")
+	chainLoader := rules.NewChainLoader(
+		"internal/correlator/rules/chains.yml",
+	)
 
 	chainFile, err := chainLoader.Load()
 	if err != nil {
@@ -65,13 +69,12 @@ func main() {
 	}
 
 	chainRegistry := rules.NewChainRegistry(chainFile)
-
-	log.Printf("loaded %d chains", len(chainRegistry.All()))
+	log.Printf("loaded %d MITRE chains", len(chainRegistry.All()))
 
 	// ------------------------------------------------------------------
-	// 5. Mapper initialization
+	// 5. Behavior Mapper
 	// ------------------------------------------------------------------
-	mapperInstance, err := taxonomy.NewMapper(
+	mapper, err := taxonomy.NewMapper(
 		"internal/correlator/taxonomy/behaviors.yml",
 	)
 	if err != nil {
@@ -79,7 +82,21 @@ func main() {
 	}
 
 	// ------------------------------------------------------------------
-	// 6. Falco ingest + Brain hook
+	// 6. FSM Engine (ONE instance)
+	// ------------------------------------------------------------------
+	fsmStore := fsm.NewStore(redisClient)
+	fsmEngine := fsm.NewEngine(fsmStore)
+
+	// ------------------------------------------------------------------
+	// 7. Alert Sink
+	// ------------------------------------------------------------------
+	alertSink, err := alert.NewFileSink("/app/alerts.log")
+	if err != nil {
+		log.Fatalf("failed to create alert sink: %v", err)
+	}
+
+	// ------------------------------------------------------------------
+	// 8. Falco Ingest Loop
 	// ------------------------------------------------------------------
 	err = falco.IngestFromFile(
 		ctx,
@@ -88,7 +105,7 @@ func main() {
 		func(event falco.Event) {
 
 			// ----------------------------------------------------------
-			// 6.1 Static scoring
+			// 8.1 Static scoring
 			// ----------------------------------------------------------
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
@@ -96,7 +113,7 @@ func main() {
 			}
 
 			// ----------------------------------------------------------
-			// 6.2 Identity extraction
+			// 8.2 Identity extraction
 			// ----------------------------------------------------------
 			identity := parser.ExtractIdentity(event.OutputFields)
 			if identity.ContainerID == "" {
@@ -105,9 +122,9 @@ func main() {
 			}
 
 			// ----------------------------------------------------------
-			// 6.3 Behavior Mapping
+			// 8.3 Behavior mapping
 			// ----------------------------------------------------------
-			mappedBehavior, err := mapperInstance.Map(event.Tags)
+			behavior, err := mapper.Map(event.Tags)
 			if err != nil {
 				log.Printf("mapper skip rule=%s err=%v", event.Rule, err)
 				return
@@ -116,12 +133,12 @@ func main() {
 			log.Printf(
 				"MAPPED container=%s behavior=%s tactic=%s",
 				identity.ContainerID,
-				mappedBehavior.BehaviorID,
-				mappedBehavior.TacticID,
+				behavior.BehaviorID,
+				behavior.TacticID,
 			)
 
 			// ----------------------------------------------------------
-			// 6.4 Update container snapshot
+			// 8.4 Update container snapshot
 			// ----------------------------------------------------------
 			if err := redisRepo.UpdateContainerState(
 				ctx,
@@ -134,43 +151,51 @@ func main() {
 			}
 
 			// ----------------------------------------------------------
-			// 6.5 FSM entry point (Phase 1 – logging only)
+			// 8.5 FSM Correlation + Alert Emission
 			// ----------------------------------------------------------
-			fsmStore := fsm.NewStore(redisClient)
-			fsmEngine := fsm.NewEngine(fsmStore)
-				
-			chains := chainRegistry.GetStartingWith(mappedBehavior.TacticID)
+			chains := chainRegistry.GetStartingWith(behavior.TacticID)
 			for _, chain := range chains {
-				log.Printf(
-					"FSM CANDIDATE container=%s chain=%s next=%s",
-					identity.ContainerID,
-					chain.ID,
-					chain.Sequence[0],
-				)
-				fsmEngine.Process(
+
+				alertObj, err := fsmEngine.Process(
 					ctx,
 					identity.ContainerID,
-					mappedBehavior.TacticID,
+					behavior.TacticID,
 					chain,
 				)
+				if err != nil {
+					log.Printf("FSM error chain=%s err=%v", chain.ID, err)
+					continue
+				}
+
+				if alertObj != nil {
+					log.Printf(
+						"ALERT id=%s severity=%s chain=%s container=%s",
+						alertObj.AlertID,
+						alertObj.Severity,
+						alertObj.Chain.ID,
+						identity.ContainerID,
+					)
+
+					if err := alertSink.Emit(ctx, alertObj); err != nil {
+						log.Printf("alert sink error: %v", err)
+					}
+				}
 			}
 
 			// ----------------------------------------------------------
-			// 6.6 Temporal + frequency tracking
+			// 8.6 Temporal & frequency tracking
 			// ----------------------------------------------------------
-			eventType := event.Rule
-
 			_ = redisRepo.AddEvent(
 				ctx,
 				identity.ContainerID,
-				eventType,
+				event.Rule,
 				event.Time,
 			)
 
 			_ = redisRepo.IncrementFrequency(
 				ctx,
 				identity.ContainerID,
-				eventType,
+				event.Rule,
 				time.Minute,
 			)
 

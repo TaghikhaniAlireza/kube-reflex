@@ -4,6 +4,22 @@ version: 1
 chains:
 
   # ===============================
+  # GROUP 0 - SAMPLE
+  # ===============================
+
+  - id: remote_exploit_sample
+    name: Remote Exploit Chain
+    description: >
+      Classic remote attack lifecycle starting from reconnaissance,
+      leading to initial access and code execution.
+    sequence:
+      - TA0043   # Reconnaissance
+      - TA0011   # Initial Access
+      - TA0002   # Execution
+    max_duration: "10m"
+    severity: CRITICAL
+
+  # ===============================
   # GROUP 1 — INITIAL COMPROMISE
   # ===============================
 
