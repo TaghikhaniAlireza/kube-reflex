@@ -16,6 +16,7 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/fsm"
 )
 
 func main() {
@@ -135,6 +136,9 @@ func main() {
 			// ----------------------------------------------------------
 			// 6.5 FSM entry point (Phase 1 – logging only)
 			// ----------------------------------------------------------
+			fsmStore := fsm.NewStore(redisClient)
+			fsmEngine := fsm.NewEngine(fsmStore)
+				
 			chains := chainRegistry.GetStartingWith(mappedBehavior.TacticID)
 			for _, chain := range chains {
 				log.Printf(
@@ -142,6 +146,12 @@ func main() {
 					identity.ContainerID,
 					chain.ID,
 					chain.Sequence[0],
+				)
+				fsmEngine.Process(
+					ctx,
+					identity.ContainerID,
+					mappedBehavior.TacticID,
+					chain,
 				)
 			}
 
