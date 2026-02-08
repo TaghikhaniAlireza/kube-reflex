@@ -9,7 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/taxonomy" // New: Import Mapper package
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/rules"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/taxonomy"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
@@ -53,16 +54,31 @@ func main() {
 	redisRepo := redisinfra.NewRepository(redisClient)
 
 	// ------------------------------------------------------------------
-	// 4. Mapper initialization
+	// 4. Load Chain Definitions (NEW – Step 2 result)
 	// ------------------------------------------------------------------
-	// Assuming behaviors.yml is located in a standard configs/ path relative to the runtime.
-	mapperInstance, err := taxonomy.NewMapper("internal/correlator/taxonomy/behaviors.yml")
+	chainLoader := rules.NewChainLoader("internal/correlator/rules/chains.yml")
+
+	chainFile, err := chainLoader.Load()
+	if err != nil {
+		log.Fatalf("failed to load chains.yml: %v", err)
+	}
+
+	chainRegistry := rules.NewChainRegistry(chainFile)
+
+	log.Printf("loaded %d chains", len(chainRegistry.All()))
+
+	// ------------------------------------------------------------------
+	// 5. Mapper initialization
+	// ------------------------------------------------------------------
+	mapperInstance, err := taxonomy.NewMapper(
+		"internal/correlator/taxonomy/behaviors.yml",
+	)
 	if err != nil {
 		log.Fatalf("failed to initialize taxonomy mapper: %v", err)
 	}
 
 	// ------------------------------------------------------------------
-	// 5. Falco ingest + Brain hook
+	// 6. Falco ingest + Brain hook
 	// ------------------------------------------------------------------
 	err = falco.IngestFromFile(
 		ctx,
@@ -71,7 +87,7 @@ func main() {
 		func(event falco.Event) {
 
 			// ----------------------------------------------------------
-			// 5.1 Static scoring (priority-based)
+			// 6.1 Static scoring
 			// ----------------------------------------------------------
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
@@ -79,38 +95,32 @@ func main() {
 			}
 
 			// ----------------------------------------------------------
-			// 5.2 Identity extraction
+			// 6.2 Identity extraction
 			// ----------------------------------------------------------
 			identity := parser.ExtractIdentity(event.OutputFields)
-
 			if identity.ContainerID == "" {
 				log.Println("skip event without container.id")
 				return
 			}
-            
-            // ----------------------------------------------------------
-			// 5.3 Behavior Mapping (The new core logic)
-			// ----------------------------------------------------------
-            
-            // IMPORTANT: Assuming event.Tags is the source of raw Falco tags []string
-            mappedBehavior, err := mapperInstance.Map(event.Tags) 
-            if err != nil {
-                // If no valid MITRE ID is found, we log it and skip further correlation steps.
-                log.Printf("Mapper skip for rule %s: %v", event.Rule, err)
-                return 
-            }
-            
-            // For now, log the mapped behavior to confirm the mapper is working correctly
-            log.Printf(
-                "MAPPED container=%s behavior=%s tactic=%s tags=%v", 
-                identity.ContainerID, 
-                mappedBehavior.BehaviorID, 
-                mappedBehavior.TacticName, 
-                mappedBehavior.ContextTags,
-            )
 
 			// ----------------------------------------------------------
-			// 5.4 Update container snapshot (state)
+			// 6.3 Behavior Mapping
+			// ----------------------------------------------------------
+			mappedBehavior, err := mapperInstance.Map(event.Tags)
+			if err != nil {
+				log.Printf("mapper skip rule=%s err=%v", event.Rule, err)
+				return
+			}
+
+			log.Printf(
+				"MAPPED container=%s behavior=%s tactic=%s",
+				identity.ContainerID,
+				mappedBehavior.BehaviorID,
+				mappedBehavior.TacticID,
+			)
+
+			// ----------------------------------------------------------
+			// 6.4 Update container snapshot
 			// ----------------------------------------------------------
 			if err := redisRepo.UpdateContainerState(
 				ctx,
@@ -123,37 +133,39 @@ func main() {
 			}
 
 			// ----------------------------------------------------------
-			// 5.5 Add behavioral data (Phase 1 core)
+			// 6.5 FSM entry point (Phase 1 – logging only)
 			// ----------------------------------------------------------
+			chains := chainRegistry.GetStartingWith(mappedBehavior.TacticID)
+			for _, chain := range chains {
+				log.Printf(
+					"FSM CANDIDATE container=%s chain=%s next=%s",
+					identity.ContainerID,
+					chain.ID,
+					chain.Sequence[0],
+				)
+			}
 
-			// Event type (later: enum / normalized type)
+			// ----------------------------------------------------------
+			// 6.6 Temporal + frequency tracking
+			// ----------------------------------------------------------
 			eventType := event.Rule
 
-			// 1) Temporal stream (ZSET)
-			if err := redisRepo.AddEvent(
+			_ = redisRepo.AddEvent(
 				ctx,
 				identity.ContainerID,
 				eventType,
 				event.Time,
-			); err != nil {
-				log.Printf("redis AddEvent error: %v", err)
-			}
+			)
 
-			// 2) Frequency counter (velocity)
-			if err := redisRepo.IncrementFrequency(
+			_ = redisRepo.IncrementFrequency(
 				ctx,
 				identity.ContainerID,
 				eventType,
 				time.Minute,
-			); err != nil {
-				log.Printf("redis IncrementFrequency error: %v", err)
-			}
+			)
 
-			// ----------------------------------------------------------
-			// 5.6 Debug log
-			// ----------------------------------------------------------
 			log.Printf(
-				"INGEST SUCCESS container=%s rule=%s score=%d",
+				"INGEST OK container=%s rule=%s score=%d",
 				identity.ContainerID,
 				event.Rule,
 				score,

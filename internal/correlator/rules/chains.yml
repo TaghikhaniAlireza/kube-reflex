@@ -1,0 +1,292 @@
+#internal/rules/chains.yml
+version: 1
+
+chains:
+
+  # ===============================
+  # GROUP 1 — INITIAL COMPROMISE
+  # ===============================
+
+  - id: remote_exploit
+    name: Remote Exploit Chain
+    description: >
+      Classic remote attack lifecycle starting from reconnaissance,
+      leading to initial access and code execution.
+    sequence:
+      - TA0043   # Reconnaissance
+      - TA0001   # Initial Access
+      - TA0002   # Execution
+    max_duration: "10m"
+    severity: CRITICAL
+
+  - id: phishing_compromise
+    name: Phishing-Based Compromise
+    description: >
+      Reconnaissance followed by phishing or social engineering,
+      resulting in execution and persistence.
+    sequence:
+      - TA0043
+      - TA0001
+      - TA0002
+      - TA0003
+    max_duration: "20m"
+    severity: HIGH
+
+  - id: supply_chain_attack
+    name: Supply Chain Compromise
+    description: >
+      Compromise via third-party or supply-chain artifacts,
+      often stealthy and high impact.
+    sequence:
+      - TA0043
+      - TA0001
+      - TA0002
+      - TA0003
+      - TA0005
+    max_duration: "60m"
+    severity: CRITICAL
+
+
+  # ===============================
+  # GROUP 2 — MALWARE & PERSISTENCE
+  # ===============================
+
+  - id: malware_install
+    name: Malware Installation
+    description: >
+      Malware delivery followed by execution and persistence.
+    sequence:
+      - TA0001
+      - TA0002
+      - TA0003
+    max_duration: "15m"
+    severity: HIGH
+
+  - id: stealth_malware
+    name: Stealthy Malware Deployment
+    description: >
+      Low-noise malware that establishes persistence
+      and prepares for credential access.
+    sequence:
+      - TA0001
+      - TA0002
+      - TA0003
+      - TA0006
+    max_duration: "30m"
+    severity: CRITICAL
+
+  - id: living_off_the_land
+    name: Living-Off-The-Land Abuse
+    description: >
+      Abuse of legitimate tools to evade detection,
+      followed by defense evasion.
+    sequence:
+      - TA0002
+      - TA0003
+      - TA0005
+    max_duration: "25m"
+    severity: HIGH
+
+
+  # ===============================
+  # GROUP 3 — PRIVILEGE ESCALATION
+  # ===============================
+
+  - id: privilege_escalation_path
+    name: Privilege Escalation Path
+    description: >
+      Execution followed by privilege escalation
+      and defense evasion.
+    sequence:
+      - TA0002
+      - TA0004
+      - TA0005
+    max_duration: "20m"
+    severity: CRITICAL
+
+  - id: credential_harvesting
+    name: Credential Harvesting Chain
+    description: >
+      Harvesting credentials and preparing for lateral movement.
+    sequence:
+      - TA0002
+      - TA0006
+      - TA0008
+    max_duration: "25m"
+    severity: CRITICAL
+
+  - id: container_breakout
+    name: Container Breakout Attempt
+    description: >
+      Attempt to escape container boundaries
+      via privilege escalation.
+    sequence:
+      - TA0002
+      - TA0004
+      - TA0007
+    max_duration: "15m"
+    severity: CRITICAL
+
+
+  # ===============================
+  # GROUP 4 — LATERAL MOVEMENT
+  # ===============================
+
+  - id: lateral_movement_classic
+    name: Lateral Movement (Classic)
+    description: >
+      Movement inside cluster or network
+      after initial compromise.
+    sequence:
+      - TA0005
+      - TA0008
+      - TA0002
+    max_duration: "30m"
+    severity: HIGH
+
+  - id: worm_propagation
+    name: Worm-like Propagation
+    description: >
+      Automated lateral spread resembling worm behavior.
+    sequence:
+      - TA0008
+      - TA0001
+      - TA0002
+    max_duration: "20m"
+    severity: CRITICAL
+
+  - id: east_west_attack
+    name: East-West Movement (Cloud/K8s)
+    description: >
+      Lateral movement within cloud or Kubernetes environments.
+    sequence:
+      - TA0008
+      - TA0005
+      - TA0006
+    max_duration: "30m"
+    severity: HIGH
+
+
+  # ===============================
+  # GROUP 5 — DISCOVERY & ESPIONAGE
+  # ===============================
+
+  - id: internal_discovery
+    name: Internal Discovery Chain
+    description: >
+      Discovery of internal services, users, or infrastructure.
+    sequence:
+      - TA0007
+      - TA0008
+    max_duration: "20m"
+    severity: MEDIUM
+
+  - id: full_espionage
+    name: Full Espionage Lifecycle
+    description: >
+      Full advanced persistent threat lifecycle
+      focused on intelligence gathering.
+    sequence:
+      - TA0043
+      - TA0001
+      - TA0002
+      - TA0009
+      - TA0010
+    max_duration: "120m"
+    severity: CRITICAL
+
+
+  # ===============================
+  # GROUP 6 — DATA THEFT
+  # ===============================
+
+  - id: data_exfiltration
+    name: Data Exfiltration
+    description: >
+      Collection of sensitive data followed by exfiltration.
+    sequence:
+      - TA0009
+      - TA0010
+    max_duration: "45m"
+    severity: CRITICAL
+
+  - id: credential_to_data_theft
+    name: Credential Theft to Data Exfiltration
+    description: >
+      Credential access followed by lateral movement
+      and data exfiltration.
+    sequence:
+      - TA0006
+      - TA0008
+      - TA0010
+    max_duration: "40m"
+    severity: CRITICAL
+
+
+  # ===============================
+  # GROUP 7 — IMPACT & DESTRUCTION
+  # ===============================
+
+  - id: ransomware_chain
+    name: Ransomware Kill Chain
+    description: >
+      Typical ransomware attack including encryption impact.
+    sequence:
+      - TA0001
+      - TA0002
+      - TA0003
+      - TA0010
+      - TA0040
+    max_duration: "90m"
+    severity: CRITICAL
+
+  - id: data_destruction
+    name: Data Destruction / Wiper
+    description: >
+      Destructive attack aiming to wipe or corrupt data.
+    sequence:
+      - TA0002
+      - TA0040
+    max_duration: "20m"
+    severity: CRITICAL
+
+
+  # ===============================
+  # GROUP 8 — STEALTH & LONG-TERM APT
+  # ===============================
+
+  - id: defense_evasion_heavy
+    name: Heavy Defense Evasion
+    description: >
+      Continuous evasion techniques combined with execution.
+    sequence:
+      - TA0005
+      - TA0006
+      - TA0002
+    max_duration: "30m"
+    severity: HIGH
+
+  - id: stealth_persistence
+    name: Stealth Persistence Chain
+    description: >
+      Long-term stealthy persistence with credential access.
+    sequence:
+      - TA0003
+      - TA0005
+      - TA0006
+    max_duration: "60m"
+    severity: HIGH
+
+  - id: long_term_apt
+    name: Long-Term APT Foothold
+    description: >
+      Advanced persistent threat establishing
+      long-term access and evasion.
+    sequence:
+      - TA0043
+      - TA0001
+      - TA0003
+      - TA0005
+      - TA0006
+    max_duration: "180m"
+    severity: CRITICAL
