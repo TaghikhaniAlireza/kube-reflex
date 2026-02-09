@@ -1,5 +1,4 @@
 // cmd/brain/main.go
-// cmd/brain/main.go
 package main
 
 import (
@@ -153,7 +152,9 @@ func main() {
 			// ----------------------------------------------------------
 			// 8.5 FSM Correlation + Alert Emission
 			// ----------------------------------------------------------
-			chains := chainRegistry.GetStartingWith(behavior.TacticID)
+			// FIXED: Iterate over ALL chains, not just the ones starting with this tactic.
+			// The FSM engine needs to check if this tactic is the NEXT step in any active chain.
+			chains := chainRegistry.All()
 			for _, chain := range chains {
 
 				alertObj, err := fsmEngine.Process(

@@ -3,100 +3,95 @@ package fsm
 
 import (
 	"context"
-	"log"
-	"strconv"
+	"encoding/json"
+	"fmt"
 	"time"
 
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/model"
 	"github.com/redis/go-redis/v9"
 )
 
-type Store struct {
-	rdb *redis.Client
+type RedisStore struct {
+	client *redis.Client
 }
 
-func NewStore(rdb *redis.Client) *Store {
-	return &Store{rdb: rdb}
+func NewStore(client *redis.Client) *RedisStore {
+	return &RedisStore{client: client}
 }
 
-func key(containerID, chainID string) string {
-	return "fsm:" + containerID + ":" + chainID
+func (s *RedisStore) key(containerID, chainID string) string {
+	return fmt.Sprintf("fsm:%s:%s", containerID, chainID)
 }
 
-func (s *Store) Get(ctx context.Context, containerID, chainID string) (*State, error) {
-	k := key(containerID, chainID)
-	log.Printf("REDIS GET | Key=%s", k)
-	res, err := s.rdb.HGetAll(ctx, k).Result()
+func (s *RedisStore) Create(ctx context.Context, containerID, chainID, tactic string, ttl time.Duration) error {
+	// Uses the State struct defined in state.go (same package)
+	state := State{
+		Step:       0,
+		LastTactic: tactic,
+		LastSeen:   time.Now().Unix(),
+		StartedAt:  time.Now().Unix(),
+	}
+
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+
+	key := s.key(containerID, chainID)
+
+	pipe := s.client.Pipeline()
+	pipe.Set(ctx, key, data, 0)
+	pipe.Expire(ctx, key, ttl)
+	_, err = pipe.Exec(ctx)
+
+	return err
+}
+
+func (s *RedisStore) Get(ctx context.Context, containerID, chainID string) (*State, error) {
+	key := s.key(containerID, chainID)
+	val, err := s.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	if len(res) == 0 {
-		return nil, nil
+
+	var state State
+	if err := json.Unmarshal([]byte(val), &state); err != nil {
+		return nil, err
 	}
 
-	step, _ := strconv.Atoi(res["step"])
-	lastSeen, _ := strconv.ParseInt(res["last_seen"], 10, 64)
-	startedAt, _ := strconv.ParseInt(res["started_at"], 10, 64)
-	log.Printf("✅ REDIS FOUND | Key=%s | Step=%d | LastTactic=%s", k, step, res["last_tactic"])
-	return &State{
-		Step:       step,
-		LastTactic: res["last_tactic"],
-		LastSeen:   lastSeen,
-		StartedAt:  startedAt,
-	}, nil
+	return &state, nil
 }
 
-func (s *Store) Create(
-	ctx context.Context,
-	containerID, chainID, tactic string,
-	ttl time.Duration,
-) error {
-	k := key(containerID, chainID)
-	now := time.Now().Unix()
-	
-	log.Printf("REDIS CREATE | Key=%s | TTL=%v", k, ttl)
+func (s *RedisStore) Promote(ctx context.Context, containerID, chainID, tactic string, newStep int, ttl time.Duration) error {
+	state, err := s.Get(ctx, containerID, chainID)
+	if err != nil {
+		return err
+	}
+	if state == nil {
+		return fmt.Errorf("state not found for promote")
+	}
 
-	pipe := s.rdb.TxPipeline()
-	pipe.HSet(ctx, k, map[string]interface{}{
-		"step":        0,
-		"last_tactic": tactic,
-		"last_seen":   now,
-		"started_at":  now,
-	})
-	pipe.Expire(ctx, k, ttl)
-	_, err := pipe.Exec(ctx)
+	state.Step = newStep
+	state.LastTactic = tactic
+	state.LastSeen = time.Now().Unix()
+
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+
+	key := s.key(containerID, chainID)
+
+	pipe := s.client.Pipeline()
+	pipe.Set(ctx, key, data, 0)
+	pipe.Expire(ctx, key, ttl)
+	_, err = pipe.Exec(ctx)
+
 	return err
 }
 
-func (s *Store) Promote(
-	ctx context.Context,
-	containerID, chainID, tactic string,
-	step int,
-	ttl time.Duration,
-) error {
-	k := key(containerID, chainID)
-	now := time.Now().Unix()
-	
-	log.Printf("REDIS PROMOTE | Key=%s | NewStep=%d", k, step)
-
-	pipe := s.rdb.TxPipeline()
-	pipe.HSet(ctx, k, map[string]interface{}{
-		"step":        step,
-		"last_tactic": tactic,
-		"last_seen":   now,
-	})
-	pipe.Expire(ctx, k, ttl)
-	_, err := pipe.Exec(ctx)
-	return err
-}
-
-func (s *Store) Delete(ctx context.Context, containerID, chainID string) error {
-	return s.rdb.Del(ctx, key(containerID, chainID)).Err()
-}
-
-func (s *Store) GetTimeline(
-	ctx context.Context,
-	containerID, chainID string,
-) ([]model.AlertEvent, error) {
-	return []model.AlertEvent{}, nil
+func (s *RedisStore) Delete(ctx context.Context, containerID, chainID string) error {
+	return s.client.Del(ctx, s.key(containerID, chainID)).Err()
 }
