@@ -28,6 +28,7 @@ func main() {
 	// ------------------------------------------------------------------
 	// 1. DB migrations
 	// ------------------------------------------------------------------
+	// Ensure your db.RunMigrations() executes the new SQL file (002)
 	db.RunMigrations()
 
 	// ------------------------------------------------------------------
@@ -45,6 +46,7 @@ func main() {
 	defer pool.Close()
 
 	falcoRepo := db.NewFalcoRepository(pool)
+	alertRepo := db.NewAlertRepository(pool) // <--- Initialize Alert Repo
 
 	// ------------------------------------------------------------------
 	// 3. Redis
@@ -81,18 +83,26 @@ func main() {
 	}
 
 	// ------------------------------------------------------------------
-	// 6. FSM Engine (ONE instance)
+	// 6. FSM Engine
 	// ------------------------------------------------------------------
 	fsmStore := fsm.NewStore(redisClient)
 	fsmEngine := fsm.NewEngine(fsmStore)
 
 	// ------------------------------------------------------------------
-	// 7. Alert Sink
+	// 7. Alert Sinks (Composite)
 	// ------------------------------------------------------------------
-	alertSink, err := alert.NewFileSink("/app/alerts.log")
+	
+	// A. File Sink (Legacy/Debug)
+	fileSink, err := alert.NewFileSink("/app/alerts.log")
 	if err != nil {
-		log.Fatalf("failed to create alert sink: %v", err)
+		log.Fatalf("failed to create file sink: %v", err)
 	}
+
+	// B. Postgres Sink (Persistence)
+	pgSink := alert.NewPostgresSink(alertRepo)
+
+	// C. MultiSink (Writes to both)
+	alertSink := alert.NewMultiSink(fileSink, pgSink)
 
 	// ------------------------------------------------------------------
 	// 8. Falco Ingest Loop
@@ -103,26 +113,20 @@ func main() {
 		falcoRepo,
 		func(event falco.Event) {
 
-			// ----------------------------------------------------------
 			// 8.1 Static scoring
-			// ----------------------------------------------------------
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
 				return
 			}
 
-			// ----------------------------------------------------------
 			// 8.2 Identity extraction
-			// ----------------------------------------------------------
 			identity := parser.ExtractIdentity(event.OutputFields)
 			if identity.ContainerID == "" {
 				log.Println("skip event without container.id")
 				return
 			}
 
-			// ----------------------------------------------------------
 			// 8.3 Behavior mapping
-			// ----------------------------------------------------------
 			behavior, err := mapper.Map(event.Tags)
 			if err != nil {
 				log.Printf("mapper skip rule=%s err=%v", event.Rule, err)
@@ -136,9 +140,7 @@ func main() {
 				behavior.TacticID,
 			)
 
-			// ----------------------------------------------------------
 			// 8.4 Update container snapshot
-			// ----------------------------------------------------------
 			if err := redisRepo.UpdateContainerState(
 				ctx,
 				identity,
@@ -149,11 +151,7 @@ func main() {
 				return
 			}
 
-			// ----------------------------------------------------------
 			// 8.5 FSM Correlation + Alert Emission
-			// ----------------------------------------------------------
-			// FIXED: Iterate over ALL chains, not just the ones starting with this tactic.
-			// The FSM engine needs to check if this tactic is the NEXT step in any active chain.
 			chains := chainRegistry.All()
 			for _, chain := range chains {
 
@@ -170,22 +168,22 @@ func main() {
 
 				if alertObj != nil {
 					log.Printf(
-						"ALERT id=%s severity=%s chain=%s container=%s",
+						"🚨 EMITTING ALERT id=%s severity=%s chain=%s",
 						alertObj.AlertID,
 						alertObj.Severity,
 						alertObj.Chain.ID,
-						identity.ContainerID,
 					)
 
+					// This now writes to DB AND File
 					if err := alertSink.Emit(ctx, alertObj); err != nil {
-						log.Printf("alert sink error: %v", err)
+						log.Printf("❌ alert sink error: %v", err)
+					} else {
+						log.Printf("✅ alert saved successfully")
 					}
 				}
 			}
 
-			// ----------------------------------------------------------
 			// 8.6 Temporal & frequency tracking
-			// ----------------------------------------------------------
 			_ = redisRepo.AddEvent(
 				ctx,
 				identity.ContainerID,
@@ -198,13 +196,6 @@ func main() {
 				identity.ContainerID,
 				event.Rule,
 				time.Minute,
-			)
-
-			log.Printf(
-				"INGEST OK container=%s rule=%s score=%d",
-				identity.ContainerID,
-				event.Rule,
-				score,
 			)
 		},
 	)
