@@ -18,7 +18,7 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
+	//"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
 )
 
 func main() {
@@ -32,16 +32,16 @@ func main() {
 	// Ensure your db.RunMigrations() executes the new SQL file (002)
 	db.RunMigrations()
 
-	// ------------------------------------------------------------------
-	// 1.2 Initialize Kubernetes Client & Informer
-	// ------------------------------------------------------------------
-    // This starts the background cache sync
-    k8sClient, err := k8s.NewK8sClient()
-    if err != nil {
-        log.Fatalf("Failed to initialize Kubernetes client: %v", err)
-    }
-    // Ensure we close the informer when main exits
-    defer k8sClient.Close()
+	//// ------------------------------------------------------------------
+	//// 1.2 Initialize Kubernetes Client & Informer
+	//// ------------------------------------------------------------------
+    //// This starts the background cache sync
+    //k8sClient, err := k8s.NewK8sClient()
+    //if err != nil {
+    //    log.Fatalf("Failed to initialize Kubernetes client: %v", err)
+    //}
+    //// Ensure we close the informer when main exits
+    //defer k8sClient.Close()
 	
 	// ------------------------------------------------------------------
 	// 2. PostgreSQL

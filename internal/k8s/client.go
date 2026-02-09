@@ -2,7 +2,6 @@
 package k8s
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -12,7 +11,6 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
@@ -26,25 +24,20 @@ type K8sClient struct {
 
 // NewK8sClient initializes the client and starts the informer factory
 func NewK8sClient() (*K8sClient, error) {
-	config, err := rest.InClusterConfig()
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kc := filepath.Join(home, ".kube", "config")
+		kubeconfig = &kc
+	} else {
+		kc := ""
+		kubeconfig = &kc
+	}
+
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		// Fallback to local kubeconfig if not running inside a cluster
-		var kubeconfig *string
-		if home := homedir.HomeDir(); home != "" {
-			kc := filepath.Join(home, ".kube", "config")
-			kubeconfig = &kc
-		} else {
-			kc := "" // Handle case where home is not found
-			kubeconfig = &kc
-		}
-		
-		// If flags are parsed in main, this might be redundant but safe
-		flag.Parse() 
-		
-		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
-		}
+		return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -69,9 +62,15 @@ func NewK8sClient() (*K8sClient, error) {
 
 	// Wait for the cache to sync (CRITICAL step)
 	log.Println("Waiting for K8s cache sync...")
-	if !factory.WaitForCacheSync(client.stopCh) {
-		return nil, fmt.Errorf("failed to sync k8s cache")
+	
+	// FIX: Handle map return type correctly
+	syncResults := factory.WaitForCacheSync(client.stopCh)
+	for t, synced := range syncResults {
+		if !synced {
+			return nil, fmt.Errorf("failed to sync cache for type %v", t)
+		}
 	}
+	
 	log.Println("K8s cache synced successfully")
 
 	return client, nil

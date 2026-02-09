@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1" // FIX: Added this import alias
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -15,23 +16,18 @@ type PodContext struct {
 	NodeName   string
 	Image      string
 	Labels     map[string]string
-	OwnerKind  string // Deployment, DaemonSet, etc.
+	OwnerKind  string
 	OwnerName  string
 }
 
 // ResolveContainer finds the pod owning the given container ID
-// It iterates through the local cache (Lister), so it's very fast and cheap.
 func (k *K8sClient) ResolveContainer(containerID string) (*PodContext, error) {
 	// List all pods from the local cache
-	// labels.Everything() means "give me all pods"
 	pods, err := k.PodLister.List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods from cache: %w", err)
 	}
 
-	// Iterate over all pods to find the container ID
-	// Note: In huge clusters (10k+ pods), we might need a secondary index,
-	// but for now, iterating memory is extremely fast (microseconds).
 	for _, pod := range pods {
 		// Check InitContainers
 		for _, container := range pod.Status.InitContainerStatuses {
@@ -47,7 +43,7 @@ func (k *K8sClient) ResolveContainer(containerID string) (*PodContext, error) {
 			}
 		}
 		
-		// Check Ephemeral Containers (if any)
+		// Check Ephemeral Containers
 		for _, container := range pod.Status.EphemeralContainerStatuses {
 			if matchContainerID(container.ContainerID, containerID) {
 				return extractContext(pod, container.Image), nil
@@ -58,21 +54,14 @@ func (k *K8sClient) ResolveContainer(containerID string) (*PodContext, error) {
 	return nil, fmt.Errorf("pod not found for container ID: %s", containerID)
 }
 
-// matchContainerID handles the prefix issue (docker:// vs containerd:// vs short ID)
 func matchContainerID(k8sID, searchID string) bool {
-	// Falco usually sends the short version (12 chars) or full version.
-	// K8s usually stores "containerd://<long_hash>"
-	
-	// If searchID is empty, it's not a match
 	if searchID == "" {
 		return false
 	}
-
-	// Simple contains check usually works best
+	// Handles "containerd://<hash>" vs "<short_hash>"
 	return strings.Contains(k8sID, searchID)
 }
 
-// extractContext helps populate the PodContext struct
 func extractContext(pod *corev1.Pod, imageName string) *PodContext {
     ctx := &PodContext{
 		PodName:   pod.Name,
@@ -82,11 +71,10 @@ func extractContext(pod *corev1.Pod, imageName string) *PodContext {
 		Labels:    pod.Labels,
 	}
     
-    // Attempt to find owner (e.g., ReplicaSet)
     if len(pod.OwnerReferences) > 0 {
         ctx.OwnerKind = pod.OwnerReferences[0].Kind
         ctx.OwnerName = pod.OwnerReferences[0].Name
     }
     
-    return ctx
+ return ctx
 }
