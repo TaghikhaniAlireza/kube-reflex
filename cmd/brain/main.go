@@ -13,64 +13,79 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/fsm"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/rules"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/taxonomy"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/velocity"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
-	//"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/model"
 )
 
 func main() {
-	log.Println("starting kube-reflex brain...")
+	log.Println("[brain] starting kube-reflex brain")
 
 	ctx := context.Background()
 
 	// ------------------------------------------------------------------
-	// 1. DB migrations
+	// 1. Database migrations
 	// ------------------------------------------------------------------
-	// Ensure your db.RunMigrations() executes the new SQL file (002)
 	db.RunMigrations()
 
-	//// ------------------------------------------------------------------
-	//// 1.2 Initialize Kubernetes Client & Informer
-	//// ------------------------------------------------------------------
-    //// This starts the background cache sync
-    //k8sClient, err := k8s.NewK8sClient()
-    //if err != nil {
-    //    log.Fatalf("Failed to initialize Kubernetes client: %v", err)
-    //}
-    //// Ensure we close the informer when main exits
-    //defer k8sClient.Close()
-	
 	// ------------------------------------------------------------------
 	// 2. PostgreSQL
 	// ------------------------------------------------------------------
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("DATABASE_URL is not set")
+		log.Fatal("[brain] DATABASE_URL is not set")
 	}
 
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[brain] failed to connect postgres: %v", err)
 	}
 	defer pool.Close()
 
 	falcoRepo := db.NewFalcoRepository(pool)
-	alertRepo := db.NewAlertRepository(pool) // <--- Initialize Alert Repo
+	alertRepo := db.NewAlertRepository(pool)
 
 	// ------------------------------------------------------------------
 	// 3. Redis
 	// ------------------------------------------------------------------
 	redisClient, err := redisinfra.NewRedisClient()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[brain] redis init error: %v", err)
 	}
+
 	redisRepo := redisinfra.NewRepository(redisClient)
 
 	// ------------------------------------------------------------------
-	// 4. Load MITRE Chains
+	// 4. Alert Sinks (Composite)
+	// ------------------------------------------------------------------
+	fileSink, err := alert.NewFileSink("/app/alerts.log")
+	if err != nil {
+		log.Fatalf("[brain] file sink error: %v", err)
+	}
+
+	pgSink := alert.NewPostgresSink(alertRepo)
+	alertSink := alert.NewMultiSink(fileSink, pgSink)
+
+	// ------------------------------------------------------------------
+	// 5. Velocity Alert Channel ✅ FIX
+	// ------------------------------------------------------------------
+	alertCh := make(chan model.Alert, 100)
+
+	go func() {
+		for a := range alertCh {
+			alertCopy := a // ✅ avoid pointer aliasing
+			if err := alertSink.Emit(ctx, &alertCopy); err != nil {
+				log.Printf("[brain] velocity alert emit error: %v", err)
+			}
+		}
+	}()
+
+	// ------------------------------------------------------------------
+	// 6. Load MITRE Chains
 	// ------------------------------------------------------------------
 	chainLoader := rules.NewChainLoader(
 		"internal/correlator/rules/chains.yml",
@@ -78,46 +93,39 @@ func main() {
 
 	chainFile, err := chainLoader.Load()
 	if err != nil {
-		log.Fatalf("failed to load chains.yml: %v", err)
+		log.Fatalf("[brain] failed to load chains.yml: %v", err)
 	}
 
 	chainRegistry := rules.NewChainRegistry(chainFile)
-	log.Printf("loaded %d MITRE chains", len(chainRegistry.All()))
+	log.Printf("[brain] loaded %d MITRE chains", len(chainRegistry.All()))
 
 	// ------------------------------------------------------------------
-	// 5. Behavior Mapper
+	// 7. Behavior Mapper
 	// ------------------------------------------------------------------
 	mapper, err := taxonomy.NewMapper(
 		"internal/correlator/taxonomy/behaviors.yml",
 	)
 	if err != nil {
-		log.Fatalf("failed to initialize taxonomy mapper: %v", err)
+		log.Fatalf("[brain] taxonomy mapper error: %v", err)
 	}
 
 	// ------------------------------------------------------------------
-	// 6. FSM Engine
+	// 8. FSM Engine
 	// ------------------------------------------------------------------
 	fsmStore := fsm.NewStore(redisClient)
 	fsmEngine := fsm.NewEngine(fsmStore)
 
 	// ------------------------------------------------------------------
-	// 7. Alert Sinks (Composite)
+	// 9. Velocity Engine ✅ ALIGNED
 	// ------------------------------------------------------------------
-	
-	// A. File Sink (Legacy/Debug)
-	fileSink, err := alert.NewFileSink("/app/alerts.log")
-	if err != nil {
-		log.Fatalf("failed to create file sink: %v", err)
-	}
-
-	// B. Postgres Sink (Persistence)
-	pgSink := alert.NewPostgresSink(alertRepo)
-
-	// C. MultiSink (Writes to both)
-	alertSink := alert.NewMultiSink(fileSink, pgSink)
+	velocityDetector := velocity.NewDetector(redisClient)
+	velocityEngine := velocity.NewEngine(
+		velocityDetector,
+		alertCh, // ✅ model.Alert channel
+	)
 
 	// ------------------------------------------------------------------
-	// 8. Falco Ingest Loop
+	// 10. Falco Ingest Loop
 	// ------------------------------------------------------------------
 	err = falco.IngestFromFile(
 		ctx,
@@ -125,47 +133,53 @@ func main() {
 		falcoRepo,
 		func(event falco.Event) {
 
-			// 8.1 Static scoring
+			// ---- Scoring ---------------------------------------------
 			score := scoring.ScoreFromPriority(event.Priority)
 			if score == 0 {
 				return
 			}
 
-			// 8.2 Identity extraction
+			// ---- Identity --------------------------------------------
 			identity := parser.ExtractIdentity(event.OutputFields)
 			if identity.ContainerID == "" {
-				log.Println("skip event without container.id")
+				log.Println("[brain] skip event without container_id")
 				return
 			}
 
-			// 8.3 Behavior mapping
+			// ---- Behavior Mapping ------------------------------------
 			behavior, err := mapper.Map(event.Tags)
 			if err != nil {
-				log.Printf("mapper skip rule=%s err=%v", event.Rule, err)
+				log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
 				return
 			}
 
 			log.Printf(
-				"MAPPED container=%s behavior=%s tactic=%s",
+				"[brain] mapped container=%s behavior=%s tactic=%s",
 				identity.ContainerID,
 				behavior.BehaviorID,
 				behavior.TacticID,
 			)
 
-			// 8.4 Update container snapshot
+			// ---- Velocity Engine (Volume / Pressure) ----------------
+			velocityEngine.Process(
+				ctx,
+				identity.ContainerID,
+				behavior.BehaviorID,
+				event.Time,
+			)
+
+			// ---- Update Container Snapshot ---------------------------
 			if err := redisRepo.UpdateContainerState(
 				ctx,
 				identity,
 				score,
 				15*time.Minute,
 			); err != nil {
-				log.Printf("redis UpdateContainerState error: %v", err)
-				return
+				log.Printf("[brain] redis UpdateContainerState error: %v", err)
 			}
 
-			// 8.5 FSM Correlation + Alert Emission
-			chains := chainRegistry.All()
-			for _, chain := range chains {
+			// ---- FSM Correlation (Sequence) --------------------------
+			for _, chain := range chainRegistry.All() {
 
 				alertObj, err := fsmEngine.Process(
 					ctx,
@@ -174,47 +188,29 @@ func main() {
 					chain,
 				)
 				if err != nil {
-					log.Printf("FSM error chain=%s err=%v", chain.ID, err)
+					log.Printf("[brain] FSM error chain=%s err=%v", chain.ID, err)
 					continue
 				}
 
 				if alertObj != nil {
 					log.Printf(
-						"🚨 EMITTING ALERT id=%s severity=%s chain=%s",
+						"[brain] EMIT FSM ALERT id=%s severity=%s chain=%s",
 						alertObj.AlertID,
 						alertObj.Severity,
 						alertObj.Chain.ID,
 					)
 
-					// This now writes to DB AND File
 					if err := alertSink.Emit(ctx, alertObj); err != nil {
-						log.Printf("❌ alert sink error: %v", err)
-					} else {
-						log.Printf("✅ alert saved successfully")
+						log.Printf("[brain] alert sink error: %v", err)
 					}
 				}
 			}
-
-			// 8.6 Temporal & frequency tracking
-			_ = redisRepo.AddEvent(
-				ctx,
-				identity.ContainerID,
-				event.Rule,
-				event.Time,
-			)
-
-			_ = redisRepo.IncrementFrequency(
-				ctx,
-				identity.ContainerID,
-				event.Rule,
-				time.Minute,
-			)
 		},
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[brain] ingest error: %v", err)
 	}
 
-	log.Println("brain finished ingesting falco events")
+	log.Println("[brain] finished ingesting falco events")
 }
