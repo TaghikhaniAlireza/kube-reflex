@@ -22,6 +22,7 @@ func buildVelocityAlert(
 		Type:       model.AlertType("velocity_score_exceeded"),
 		Severity:   model.SeverityHigh,
 		Confidence: 0.7,
+		Score:      score,
 
 		Entity: model.AlertEntity{
 			Type: "container",

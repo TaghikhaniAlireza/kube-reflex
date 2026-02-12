@@ -5,17 +5,21 @@ import "time"
 
 // Alert represents a finalized security finding emitted by the correlator.
 type Alert struct {
-	AlertID    string        `json:"alert_id"`
-	Type       AlertType    `json:"type"`
-	Severity   Severity     `json:"severity"`
-	Confidence float64       `json:"confidence"`
+	AlertID    string     `json:"alert_id"`
+	Type       AlertType  `json:"type"`
+	Severity   Severity   `json:"severity"`
+	Confidence float64    `json:"confidence"`
 
-	Chain      AlertChain   `json:"chain"`
-	Entity     AlertEntity  `json:"entity"`
-	Timeline   []AlertEvent `json:"timeline"`
+	// Score captures the numeric risk/pressure score associated with this alert.
+	// For velocity alerts this is the velocity score; for other engines it may be zero.
+	Score int `json:"score"`
 
-	Source     AlertSource  `json:"source"`
-	Timestamps AlertTime    `json:"timestamps"`
+	Chain    AlertChain   `json:"chain"`
+	Entity   AlertEntity  `json:"entity"`
+	Timeline []AlertEvent `json:"timeline"`
+
+	Source     AlertSource `json:"source"`
+	Timestamps AlertTime   `json:"timestamps"`
 }
 
 /* -------------------- ENUMS -------------------- */

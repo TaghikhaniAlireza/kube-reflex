@@ -97,20 +97,23 @@ func main() {
 
 	// ---------------- Velocity ----------------
 
-	// Adaptor: model.Alert → decision.Signal
-	alertToSignal := func(alert model.Alert) {
-		decisionInput <- decision.Signal{
-			ID:          alert.ID,
-			ContainerID: alert.ContainerID,
-			Source:      decision.SourceVelocity,
-			Score:       alert.Score,
-			Timestamp:   alert.Timestamp,
-			Details:     alert.Details,
+	// Adaptor: model.Alert → decision.Signal using a channel bridge.
+	alertCh := make(chan model.Alert, 128)
+
+	go func() {
+		for alert := range alertCh {
+			decisionInput <- decision.Signal{
+				ContainerID: alert.Entity.ID,
+				Source:      decision.SourceVelocity,
+				Score:       alert.Score,
+				Timestamp:   alert.Timestamps.CompletedAt,
+				Details:     nil,
+			}
 		}
-	}
+	}()
 
 	velocityDetector := velocity.NewDetector(redisClient)
-	velocityEngine := velocity.NewEngine(velocityDetector, alertToSignal)
+	velocityEngine := velocity.NewEngine(velocityDetector, alertCh)
 
 	// ---------------- Falco Ingest ----------------
 	err = falco.IngestFromFile(ctx, "/app/falco_sample_log.txt", nil, func(event falco.Event) {

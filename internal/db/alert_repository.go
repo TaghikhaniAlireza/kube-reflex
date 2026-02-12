@@ -3,7 +3,6 @@ package db
 
 import (
 	"context"
-	"time"
 
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/domain"
 )
