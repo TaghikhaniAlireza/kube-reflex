@@ -9,13 +9,15 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/alert"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/action"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/fsm"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/rules"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/taxonomy"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/correlator/velocity"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/decision"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
@@ -23,190 +25,141 @@ import (
 )
 
 func main() {
-	log.Println("[brain] starting kube-reflex brain")
 
+	log.Println("[brain] starting kube-reflex brain")
 	ctx := context.Background()
 
-	// ------------------------------------------------------------------
-	// 1. Database migrations
-	// ------------------------------------------------------------------
+	// ---------------- Database ----------------
 	db.RunMigrations()
 
-	// ------------------------------------------------------------------
-	// 2. PostgreSQL
-	// ------------------------------------------------------------------
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		log.Fatal("[brain] DATABASE_URL is not set")
+		log.Fatal("[brain] DATABASE_URL not set")
 	}
 
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
-		log.Fatalf("[brain] failed to connect postgres: %v", err)
+		log.Fatalf("[brain] postgres error: %v", err)
 	}
 	defer pool.Close()
 
-	falcoRepo := db.NewFalcoRepository(pool)
 	alertRepo := db.NewAlertRepository(pool)
 
-	// ------------------------------------------------------------------
-	// 3. Redis
-	// ------------------------------------------------------------------
+	// ---------------- Redis ----------------
 	redisClient, err := redisinfra.NewRedisClient()
 	if err != nil {
-		log.Fatalf("[brain] redis init error: %v", err)
+		log.Fatalf("[brain] redis error: %v", err)
 	}
 
 	redisRepo := redisinfra.NewRepository(redisClient)
 
-	// ------------------------------------------------------------------
-	// 4. Alert Sinks (Composite)
-	// ------------------------------------------------------------------
-	fileSink, err := alert.NewFileSink("/app/alerts.log")
+	// ---------------- K8s ----------------
+	k8sClient, err := k8s.NewK8sClient()
 	if err != nil {
-		log.Fatalf("[brain] file sink error: %v", err)
+		log.Fatalf("[brain] k8s init error: %v", err)
 	}
+	defer k8sClient.Close()
 
-	pgSink := alert.NewPostgresSink(alertRepo)
-	alertSink := alert.NewMultiSink(fileSink, pgSink)
+	// ---------------- Action Layer ----------------
+	fileSink := action.NewStdoutSink() // ساده‌تر برای تست
+	pgSink := action.NewPostgresSink(alertRepo)
+	actionEngine := action.NewEngine(fileSink, pgSink)
 
-	// ------------------------------------------------------------------
-	// 5. Velocity Alert Channel ✅ FIX
-	// ------------------------------------------------------------------
-	alertCh := make(chan model.Alert, 100)
-
-	go func() {
-		for a := range alertCh {
-			alertCopy := a // ✅ avoid pointer aliasing
-			if err := alertSink.Emit(ctx, &alertCopy); err != nil {
-				log.Printf("[brain] velocity alert emit error: %v", err)
-			}
-		}
-	}()
-
-	// ------------------------------------------------------------------
-	// 6. Load MITRE Chains
-	// ------------------------------------------------------------------
-	chainLoader := rules.NewChainLoader(
-		"internal/correlator/rules/chains.yml",
+	// ---------------- Decision Layer ----------------
+	judge := decision.NewJudge(k8sClient)
+	decisionEngine := decision.NewEngine(
+		decision.Config{
+			AggregationWindow: 10 * time.Second,
+		},
+		judge,
+		actionEngine,
 	)
+	decisionEngine.Start(ctx)
+	decisionInput := decisionEngine.InputChannel()
 
-	chainFile, err := chainLoader.Load()
+	// ---------------- Chains ----------------
+	chainLoader := rules.NewChainLoader("internal/correlator/rules/chains.yml")
+	chainsFile, err := chainLoader.Load()
 	if err != nil {
-		log.Fatalf("[brain] failed to load chains.yml: %v", err)
+		log.Fatalf("[brain] chain load error: %v", err)
+	}
+	chainRegistry := rules.NewChainRegistry(chainsFile)
+
+	// ---------------- Mapper ----------------
+	mapper, err := taxonomy.NewMapper("internal/correlator/taxonomy/behaviors.yml")
+	if err != nil {
+		log.Fatalf("[brain] taxonomy error: %v", err)
 	}
 
-	chainRegistry := rules.NewChainRegistry(chainFile)
-	log.Printf("[brain] loaded %d MITRE chains", len(chainRegistry.All()))
-
-	// ------------------------------------------------------------------
-	// 7. Behavior Mapper
-	// ------------------------------------------------------------------
-	mapper, err := taxonomy.NewMapper(
-		"internal/correlator/taxonomy/behaviors.yml",
-	)
-	if err != nil {
-		log.Fatalf("[brain] taxonomy mapper error: %v", err)
-	}
-
-	// ------------------------------------------------------------------
-	// 8. FSM Engine
-	// ------------------------------------------------------------------
+	// ---------------- FSM ----------------
 	fsmStore := fsm.NewStore(redisClient)
 	fsmEngine := fsm.NewEngine(fsmStore)
 
-	// ------------------------------------------------------------------
-	// 9. Velocity Engine ✅ ALIGNED
-	// ------------------------------------------------------------------
+	// ---------------- Velocity ----------------
+
+	// Adaptor: model.Alert → decision.Signal
+	alertToSignal := func(alert model.Alert) {
+		decisionInput <- decision.Signal{
+			ID:          alert.ID,
+			ContainerID: alert.ContainerID,
+			Source:      decision.SourceVelocity,
+			Score:       alert.Score,
+			Timestamp:   alert.Timestamp,
+			Details:     alert.Details,
+		}
+	}
+
 	velocityDetector := velocity.NewDetector(redisClient)
-	velocityEngine := velocity.NewEngine(
-		velocityDetector,
-		alertCh, // ✅ model.Alert channel
-	)
+	velocityEngine := velocity.NewEngine(velocityDetector, alertToSignal)
 
-	// ------------------------------------------------------------------
-	// 10. Falco Ingest Loop
-	// ------------------------------------------------------------------
-	err = falco.IngestFromFile(
-		ctx,
-		"/app/falco_sample_log.txt",
-		falcoRepo,
-		func(event falco.Event) {
+	// ---------------- Falco Ingest ----------------
+	err = falco.IngestFromFile(ctx, "/app/falco_sample_log.txt", nil, func(event falco.Event) {
 
-			// ---- Scoring ---------------------------------------------
-			score := scoring.ScoreFromPriority(event.Priority)
-			if score == 0 {
-				return
+		score := scoring.ScoreFromPriority(event.Priority)
+		if score == 0 {
+			return
+		}
+
+		identity := parser.ExtractIdentity(event.OutputFields)
+		if identity.ContainerID == "" {
+			log.Println("[brain] skip event without container_id")
+			return
+		}
+
+		behavior, err := mapper.Map(event.Tags)
+		if err != nil {
+			log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
+			return
+		}
+
+		// ---- Velocity
+		velocityEngine.Process(ctx, identity.ContainerID, behavior.BehaviorID, event.Time)
+
+		// ---- Redis Snapshot
+		_ = redisRepo.UpdateContainerState(ctx, identity, score, 15*time.Minute)
+
+		// ---- FSM
+		for _, chain := range chainRegistry.All() {
+			detected, err := fsmEngine.Process(ctx, identity.ContainerID, behavior.TacticID, chain)
+			if err != nil || detected == nil {
+				continue
 			}
 
-			// ---- Identity --------------------------------------------
-			identity := parser.ExtractIdentity(event.OutputFields)
-			if identity.ContainerID == "" {
-				log.Println("[brain] skip event without container_id")
-				return
+			// Produce Decision Signal
+			signal := decision.Signal{
+				ContainerID: identity.ContainerID,
+				Source:      decision.SourceFSM,
+				Score:       90,
+				Timestamp:   event.Time,
+				Details: map[string]string{
+					"chain_name": chain.ID,
+					"category":   behavior.TacticID,
+				},
 			}
 
-			// ---- Behavior Mapping ------------------------------------
-			behavior, err := mapper.Map(event.Tags)
-			if err != nil {
-				log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
-				return
-			}
-
-			log.Printf(
-				"[brain] mapped container=%s behavior=%s tactic=%s",
-				identity.ContainerID,
-				behavior.BehaviorID,
-				behavior.TacticID,
-			)
-
-			// ---- Velocity Engine (Volume / Pressure) ----------------
-			velocityEngine.Process(
-				ctx,
-				identity.ContainerID,
-				behavior.BehaviorID,
-				event.Time,
-			)
-
-			// ---- Update Container Snapshot ---------------------------
-			if err := redisRepo.UpdateContainerState(
-				ctx,
-				identity,
-				score,
-				15*time.Minute,
-			); err != nil {
-				log.Printf("[brain] redis UpdateContainerState error: %v", err)
-			}
-
-			// ---- FSM Correlation (Sequence) --------------------------
-			for _, chain := range chainRegistry.All() {
-
-				alertObj, err := fsmEngine.Process(
-					ctx,
-					identity.ContainerID,
-					behavior.TacticID,
-					chain,
-				)
-				if err != nil {
-					log.Printf("[brain] FSM error chain=%s err=%v", chain.ID, err)
-					continue
-				}
-
-				if alertObj != nil {
-					log.Printf(
-						"[brain] EMIT FSM ALERT id=%s severity=%s chain=%s",
-						alertObj.AlertID,
-						alertObj.Severity,
-						alertObj.Chain.ID,
-					)
-
-					if err := alertSink.Emit(ctx, alertObj); err != nil {
-						log.Printf("[brain] alert sink error: %v", err)
-					}
-				}
-			}
-		},
-	)
+			decisionInput <- signal
+		}
+	})
 
 	if err != nil {
 		log.Fatalf("[brain] ingest error: %v", err)
