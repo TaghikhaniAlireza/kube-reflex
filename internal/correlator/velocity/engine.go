@@ -48,10 +48,6 @@ func (e *Engine) Process(
 			continue
 		}
 
-		if score < rule.Threshold {
-			return
-		}
-
 		alert := buildVelocityAlert(
 			containerID,
 			rule,
@@ -62,7 +58,7 @@ func (e *Engine) Process(
 		select {
 		case e.alertCh <- alert:
 			log.Printf(
-				"[velocity] ALERT container=%s rule=%s score=%d",
+				"[velocity] SCORE container=%s rule=%s score=%d",
 				containerID,
 				rule.ID,
 				score,
