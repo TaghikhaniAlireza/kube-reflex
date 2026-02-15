@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,25 @@ import (
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
 )
+
+const debugLogPath = "c:\\Users\\CERT-01\\Documents\\kube-reflex\\.cursor\\debug.log"
+
+func debugLog(location, message, hypothesisId string, data map[string]interface{}) {
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	payload := map[string]interface{}{
+		"location": location, "message": message, "hypothesisId": hypothesisId,
+		"timestamp": time.Now().UnixMilli(), "data": data,
+	}
+	line, _ := json.Marshal(payload)
+	f, err := os.OpenFile(debugLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	f.Write(append(line, '\n'))
+	f.Close()
+}
 
 func main() {
 	log.Println("[brain] starting kube-reflex brain")
@@ -105,12 +125,19 @@ func main() {
 
 	go func() {
 		for alert := range alertCh {
-			decisionInput <- decision.Signal{
+			sig := decision.Signal{
 				ContainerID: alert.Entity.ID,
 				Source:      decision.SourceVelocity,
 				Score:       alert.Score,
 				Timestamp:   alert.Timestamps.CompletedAt,
 				Details:     nil,
+			}
+			select {
+			case decisionInput <- sig:
+			default:
+				// #region agent log
+				debugLog("main.go:velocityBridge", "decision channel full, dropping velocity signal", "H2", map[string]interface{}{"containerId": alert.Entity.ID})
+				// #endregion
 			}
 		}
 	}()
@@ -152,7 +179,7 @@ func main() {
 					if err != nil || detected == nil {
 						continue
 					}
-					decisionInput <- decision.Signal{
+					sig := decision.Signal{
 						ContainerID: identity.ContainerID,
 						Source:      decision.SourceFSM,
 						Score:      90,
@@ -161,6 +188,13 @@ func main() {
 							"chain_name": chain.ID,
 							"category":   behavior.TacticID,
 						},
+					}
+					select {
+					case decisionInput <- sig:
+					default:
+						// #region agent log
+						debugLog("main.go:fsmDecisionSend", "decision channel full, dropping FSM signal", "H2", map[string]interface{}{"containerId": identity.ContainerID, "chain": chain.ID})
+						// #endregion
 					}
 				}
 			}

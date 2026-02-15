@@ -6,7 +6,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"time"
 )
+
+const debugLogPath = "c:\\Users\\CERT-01\\Documents\\kube-reflex\\.cursor\\debug.log"
+
+func debugLog(location, message, hypothesisId string, data map[string]interface{}) {
+	if data == nil {
+		data = make(map[string]interface{})
+	}
+	payload := map[string]interface{}{
+		"location": location, "message": message, "hypothesisId": hypothesisId,
+		"timestamp": time.Now().UnixMilli(), "data": data,
+	}
+	line, _ := json.Marshal(payload)
+	f, err := os.OpenFile(debugLogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	f.Write(append(line, '\n'))
+	f.Close()
+}
 
 const maxBodyBytes = 1 << 20 // 1 MiB
 
@@ -32,6 +53,9 @@ func (h *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var raw FalcoEventRaw
 	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+		// #region agent log
+		debugLog("webhook.go:Decode", "invalid JSON", "H3", map[string]interface{}{"error": err.Error()})
+		// #endregion
 		log.Printf("[falco] webhook decode error: %v", err)
 		http.Error(w, "invalid JSON", http.StatusBadRequest)
 		return
@@ -48,6 +72,9 @@ func (h *WebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case h.Events <- event:
 		w.WriteHeader(http.StatusAccepted)
 	default:
+		// #region agent log
+		debugLog("webhook.go:EventsFull", "event queue full, returning 503", "H1", nil)
+		// #endregion
 		http.Error(w, "event queue full", http.StatusServiceUnavailable)
 	}
 }
