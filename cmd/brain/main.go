@@ -4,7 +4,10 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,16 +21,17 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/decision"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/model"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
-	"github.com/TaghikhaniAlireza/kube-reflex/internal/model"
 )
 
 func main() {
-
 	log.Println("[brain] starting kube-reflex brain")
-	ctx := context.Background()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// ---------------- Database ----------------
 	db.RunMigrations()
@@ -66,11 +70,10 @@ func main() {
 	actionEngine := action.NewEngine(fileSink, pgSink)
 
 	// ---------------- Decision Layer ----------------
+	aggregationWindow := 10 * time.Second
 	judge := decision.NewJudge(k8sClient)
 	decisionEngine := decision.NewEngine(
-		decision.Config{
-			AggregationWindow: 10 * time.Second,
-		},
+		decision.Config{AggregationWindow: aggregationWindow},
 		judge,
 		actionEngine,
 	)
@@ -115,58 +118,90 @@ func main() {
 	velocityDetector := velocity.NewDetector(redisClient)
 	velocityEngine := velocity.NewEngine(velocityDetector, alertCh)
 
-	// ---------------- Falco Ingest ----------------
-	err = falco.IngestFromFile(ctx, "/app/falco_sample_log.txt", nil, func(event falco.Event) {
+	// ---------------- Falco Webhook (event channel) ----------------
+	eventsCh := make(chan falco.Event, 256)
+	webhookHandler := falco.NewWebhookHandler(eventsCh)
 
-		score := scoring.ScoreFromPriority(event.Priority)
-		if score == 0 {
-			return
-		}
-
-		identity := parser.ExtractIdentity(event.OutputFields)
-		if identity.ContainerID == "" {
-			log.Println("[brain] skip event without container_id")
-			return
-		}
-
-		behavior, err := mapper.Map(event.Tags)
-		if err != nil {
-			log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
-			return
-		}
-
-		// ---- Velocity
-		velocityEngine.Process(ctx, identity.ContainerID, behavior.BehaviorID, event.Time)
-
-		// ---- Redis Snapshot
-		_ = redisRepo.UpdateContainerState(ctx, identity, score, 15*time.Minute)
-
-		// ---- FSM
-		for _, chain := range chainRegistry.All() {
-			detected, err := fsmEngine.Process(ctx, identity.ContainerID, behavior.TacticID, chain)
-			if err != nil || detected == nil {
-				continue
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, ok := <-eventsCh:
+				if !ok {
+					return
+				}
+				score := scoring.ScoreFromPriority(event.Priority)
+				if score == 0 {
+					continue
+				}
+				identity := parser.ExtractIdentity(event.OutputFields)
+				if identity.ContainerID == "" {
+					log.Println("[brain] skip event without container_id")
+					continue
+				}
+				behavior, err := mapper.Map(event.Tags)
+				if err != nil {
+					log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
+					continue
+				}
+				velocityEngine.Process(ctx, identity.ContainerID, behavior.BehaviorID, event.Time)
+				_ = redisRepo.UpdateContainerState(ctx, identity, score, 15*time.Minute)
+				for _, chain := range chainRegistry.All() {
+					detected, err := fsmEngine.Process(ctx, identity.ContainerID, behavior.TacticID, chain)
+					if err != nil || detected == nil {
+						continue
+					}
+					decisionInput <- decision.Signal{
+						ContainerID: identity.ContainerID,
+						Source:      decision.SourceFSM,
+						Score:      90,
+						Timestamp:  event.Time,
+						Details: map[string]string{
+							"chain_name": chain.ID,
+							"category":   behavior.TacticID,
+						},
+					}
+				}
 			}
-
-			// Produce Decision Signal
-			signal := decision.Signal{
-				ContainerID: identity.ContainerID,
-				Source:      decision.SourceFSM,
-				Score:       90,
-				Timestamp:   event.Time,
-				Details: map[string]string{
-					"chain_name": chain.ID,
-					"category":   behavior.TacticID,
-				},
-			}
-
-			decisionInput <- signal
 		}
+	}()
+
+	// ---------------- HTTP Server (goroutine) ----------------
+	mux := http.NewServeMux()
+	mux.Handle("POST /api/v1/alerts", webhookHandler)
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
 
-	if err != nil {
-		log.Fatalf("[brain] ingest error: %v", err)
+	addr := os.Getenv("LISTEN_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+	server := &http.Server{Addr: addr, Handler: mux}
+
+	go func() {
+		log.Printf("[brain] webhook listening on %s", addr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("[brain] http server: %v", err)
+		}
+	}()
+
+	// ---------------- Graceful shutdown ----------------
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	<-sigCh
+
+	log.Println("[brain] shutdown signal received, draining...")
+	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer shutdownCancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Printf("[brain] http shutdown: %v", err)
 	}
 
-	log.Println("[brain] finished ingesting falco events")
+	// Allow decision engine timers to flush buffered signals
+	time.Sleep(aggregationWindow + 2*time.Second)
+	log.Println("[brain] stopped")
 }

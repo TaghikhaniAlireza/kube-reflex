@@ -1,29 +1,23 @@
-FROM golang:1.23-bookworm
+# Build stage
+FROM golang:1.23-alpine AS builder
+RUN apk add --no-cache ca-certificates
+WORKDIR /src
 
-ENV DEBIAN_FRONTEND=noninteractive
+COPY go.mod go.sum ./
+RUN go mod download
 
-# ---- Base packages ----
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    git \
-    make \
-    gcc \
-    bash \
-    bash-completion \
-    && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /brain ./cmd/brain
 
-# ---- Copy kubectl (offline) ----
-COPY tools/kubectl /usr/local/bin/kubectl
-RUN chmod +x /usr/local/bin/kubectl
-
-# ---- Copy kubebuilder (offline) ----
-COPY tools/kubebuilder_linux_amd64 /usr/local/bin/kubebuilder
-RUN chmod +x /usr/local/bin/kubebuilder
-
-# ---- Environment ----
-ENV GO111MODULE=on
-ENV KUBECONFIG=/root/.kube/config
-
+# Runtime stage
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
-CMD ["sleep", "infinity"]
+COPY --from=builder /brain /app/brain
+COPY internal/correlator/rules/chains.yml /app/internal/correlator/rules/chains.yml
+COPY internal/correlator/taxonomy/behaviors.yml /app/internal/correlator/taxonomy/behaviors.yml
+
+EXPOSE 8080
+
+ENTRYPOINT ["/app/brain"]

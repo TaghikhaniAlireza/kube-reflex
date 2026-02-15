@@ -1,0 +1,19 @@
+# Helm values override to send Falco alerts to Kube-Reflex.
+# Use with: helm repo add falcosecurity https://falcosecurity.github.io/charts
+#          helm install falco falcosecurity/falco -f falco-values.yaml
+# Or:      helm upgrade falco falcosecurity/falco -f falco-values.yaml
+#
+# If Falco is in a different namespace than Kube-Reflex, use the full service DNS in the
+# program command below, e.g. http://kube-reflex-service.default.svc.cluster.local:8080/api/v1/alerts
+
+# Pass Falco daemon options via CLI so alerts are sent to Kube-Reflex webhook.
+extra:
+  args:
+    - "-o"
+    - "json_output=true"
+    - "-o"
+    - "program_output.enabled=true"
+    - "-o"
+    - "program_output.keep_alive=false"
+    - "-o"
+    - "program_output.program=curl -s -X POST -H Content-Type: application/json -d @- http://kube-reflex-service:8080/api/v1/alerts"
