@@ -15,6 +15,7 @@ RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 
 COPY --from=builder /brain /app/brain
+COPY migrations /app/migrations
 COPY internal/correlator/rules/chains.yml /app/internal/correlator/rules/chains.yml
 COPY internal/correlator/taxonomy/behaviors.yml /app/internal/correlator/taxonomy/behaviors.yml
 

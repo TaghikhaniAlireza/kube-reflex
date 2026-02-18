@@ -10,12 +10,15 @@ CREATE TABLE IF NOT EXISTS falco_events (
   output_fields JSONB
 );
 
--- Timescale magic
-SELECT create_hypertable(
-  'falco_events',
-  'time',
-  if_not_exists => TRUE
-);
+-- TimescaleDB optional: convert to hypertable if extension is installed
+DO $$
+BEGIN
+  PERFORM create_hypertable('falco_events', 'time', if_not_exists => TRUE);
+EXCEPTION
+  WHEN undefined_function THEN
+    NULL; -- TimescaleDB not installed, use standard table
+END;
+$$;
 
 CREATE INDEX IF NOT EXISTS idx_falco_rule ON falco_events (rule);
 CREATE INDEX IF NOT EXISTS idx_falco_priority ON falco_events (priority);

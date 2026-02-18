@@ -4,6 +4,7 @@ package fsm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -64,32 +65,53 @@ func (s *RedisStore) Get(ctx context.Context, containerID, chainID string) (*Sta
 	return &state, nil
 }
 
+const promoteMaxRetries = 100
+
 func (s *RedisStore) Promote(ctx context.Context, containerID, chainID, tactic string, newStep int, ttl time.Duration) error {
-	state, err := s.Get(ctx, containerID, chainID)
-	if err != nil {
-		return err
-	}
-	if state == nil {
-		return fmt.Errorf("state not found for promote")
-	}
-
-	state.Step = newStep
-	state.LastTactic = tactic
-	state.LastSeen = time.Now().Unix()
-
-	data, err := json.Marshal(state)
-	if err != nil {
-		return err
-	}
-
 	key := s.key(containerID, chainID)
 
-	pipe := s.client.Pipeline()
-	pipe.Set(ctx, key, data, 0)
-	pipe.Expire(ctx, key, ttl)
-	_, err = pipe.Exec(ctx)
+	txf := func(tx *redis.Tx) error {
+		val, err := tx.Get(ctx, key).Result()
+		if err == redis.Nil {
+			return fmt.Errorf("state not found for promote")
+		}
+		if err != nil {
+			return err
+		}
 
-	return err
+		var state State
+		if err := json.Unmarshal([]byte(val), &state); err != nil {
+			return err
+		}
+
+		state.Step = newStep
+		state.LastTactic = tactic
+		state.LastSeen = time.Now().Unix()
+
+		data, err := json.Marshal(state)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+			pipe.Set(ctx, key, data, 0)
+			pipe.Expire(ctx, key, ttl)
+			return nil
+		})
+		return err
+	}
+
+	for i := 0; i < promoteMaxRetries; i++ {
+		err := s.client.Watch(ctx, txf, key)
+		if err == nil {
+			return nil
+		}
+		if errors.Is(err, redis.TxFailedErr) {
+			continue
+		}
+		return err
+	}
+	return fmt.Errorf("promote: max retries (%d) exceeded", promoteMaxRetries)
 }
 
 func (s *RedisStore) Delete(ctx context.Context, containerID, chainID string) error {

@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 )
@@ -22,22 +23,27 @@ type K8sClient struct {
 	stopCh    chan struct{}
 }
 
-// NewK8sClient initializes the client and starts the informer factory
+// NewK8sClient initializes the client and starts the informer factory.
+// Prioritizes in-cluster config when running inside a pod; falls back to kubeconfig for local dev.
 func NewK8sClient() (*K8sClient, error) {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kc := filepath.Join(home, ".kube", "config")
-		kubeconfig = &kc
-	} else {
-		kc := ""
-		kubeconfig = &kc
-	}
-
 	flag.Parse()
 
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
+	var config *rest.Config
+	var err error
+
+	config, err = rest.InClusterConfig()
+	if err == nil {
+		log.Println("Using in-cluster Kubernetes config")
+	} else {
+		var kubeconfig string
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = filepath.Join(home, ".kube", "config")
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build kubeconfig: %w", err)
+		}
+		log.Println("Using kubeconfig for Kubernetes config")
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)

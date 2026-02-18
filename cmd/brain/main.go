@@ -104,13 +104,25 @@ func main() {
 	alertCh := make(chan model.Alert, 128)
 
 	go func() {
-		for alert := range alertCh {
-			decisionInput <- decision.Signal{
-				ContainerID: alert.Entity.ID,
-				Source:      decision.SourceVelocity,
-				Score:       alert.Score,
-				Timestamp:   alert.Timestamps.CompletedAt,
-				Details:     nil,
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case alert, ok := <-alertCh:
+				if !ok {
+					return
+				}
+				select {
+				case decisionInput <- decision.Signal{
+					ContainerID: alert.Entity.ID,
+					Source:      decision.SourceVelocity,
+					Score:       alert.Score,
+					Timestamp:   alert.Timestamps.CompletedAt,
+					Details:     nil,
+				}:
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
@@ -194,6 +206,10 @@ func main() {
 
 	log.Println("[brain] shutdown signal received, draining...")
 	cancel()
+
+	// Allow event loop to exit before closing alertCh (avoids panic from concurrent send)
+	time.Sleep(100 * time.Millisecond)
+	close(alertCh)
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer shutdownCancel()

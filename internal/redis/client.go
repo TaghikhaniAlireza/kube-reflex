@@ -14,10 +14,15 @@ func NewRedisClient() (*redis.Client, error) {
 		addr = "localhost:6379"
 	}
 
-	rdb := redis.NewClient(&redis.Options{
+	opts := &redis.Options{
 		Addr: addr,
 		DB:   0,
-	})
+	}
+	if pw := os.Getenv("REDIS_PASSWORD"); pw != "" {
+		opts.Password = pw
+	}
+
+	rdb := redis.NewClient(opts)
 
 	// Health check
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
