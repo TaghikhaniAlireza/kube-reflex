@@ -49,7 +49,7 @@ helm repo update
 helm upgrade --install falco falcosecurity/falco -f falco-values.yaml
 ```
 
-The override configures Falco to POST each alert to `http://kube-reflex-service:8080/api/v1/alerts`. If Falco is in a different namespace, edit `falco-values.yaml` and use the full DNS name: `http://kube-reflex-service.<namespace>.svc.cluster.local:8080/api/v1/alerts`.
+The override configures Falco to POST each alert to `http://kube-reflex.default.svc.cluster.local:8080/api/v1/alerts`. If Kube-Reflex is in a different namespace, edit `deploy/falco-values.yaml` and use the full DNS name: `http://kube-reflex.<namespace>.svc.cluster.local:8080/api/v1/alerts`.
 
 ## Optional: ConfigMaps for chains/behaviors
 

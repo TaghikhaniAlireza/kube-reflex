@@ -1,0 +1,17 @@
+# Helm values override for Falco to send alerts to Kube-Reflex.
+# Use with: helm install falco falcosecurity/falco -f deploy/falco-values.yaml
+#
+# Prerequisites: Kube-Reflex must be deployed in the default namespace with
+# Service name "kube-reflex" listening on port 8080.
+
+# Enable HTTP output and point to Kube-Reflex webhook
+extra:
+  args:
+    - "-o"
+    - "http_output.enabled=true"
+    - "-o"
+    - "http_output.url=http://kube-reflex.default.svc.cluster.local:8080/api/v1/alerts"
+    - "-o"
+    - "json_output=true"
+    - "-o"
+    - "log_level=info"

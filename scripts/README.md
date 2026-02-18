@@ -20,7 +20,7 @@ Optional: override the webhook URL:
 
 ```bash
 go run scripts/simulate_falco.go http://localhost:8080/api/v1/alerts
-go run scripts/simulate_falco.go http://kube-reflex-service:8080/api/v1/alerts   # in-cluster
+go run scripts/simulate_falco.go http://kube-reflex:8080/api/v1/alerts   # in-cluster (same namespace)
 ```
 
 ### What the script sends

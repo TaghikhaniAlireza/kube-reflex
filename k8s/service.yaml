@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kube-reflex-service
+  name: kube-reflex
   labels:
     app: kube-reflex
 spec:
