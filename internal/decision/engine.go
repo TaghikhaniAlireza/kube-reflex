@@ -8,6 +8,7 @@ import (
 
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/action"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/domain"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 )
 
 type Config struct {
@@ -18,6 +19,7 @@ type Engine struct {
 	config       Config
 	judge        *Judge
 	actionEngine *action.Engine
+	log          logger.Logger
 
 	buffer map[string][]Signal
 	timers map[string]*time.Timer
@@ -26,11 +28,12 @@ type Engine struct {
 	inputCh chan Signal
 }
 
-func NewEngine(cfg Config, judge *Judge, actionEng *action.Engine) *Engine {
+func NewEngine(cfg Config, judge *Judge, actionEng *action.Engine, log logger.Logger) *Engine {
 	return &Engine{
 		config:       cfg,
 		judge:        judge,
 		actionEngine: actionEng,
+		log:          log,
 		buffer:       make(map[string][]Signal),
 		timers:       make(map[string]*time.Timer),
 		inputCh:      make(chan Signal, 1000),
@@ -86,7 +89,14 @@ func (e *Engine) flush(containerID string) {
 	ctx := context.Background()
 
 	incident, err := e.judge.Evaluate(ctx, containerID, signals)
-	if err != nil || incident == nil {
+	if err != nil {
+		e.log.Error("Judge evaluate failed", err, map[string]interface{}{
+			"container_id":  containerID,
+			"signal_count": len(signals),
+		})
+		return
+	}
+	if incident == nil {
 		return
 	}
 

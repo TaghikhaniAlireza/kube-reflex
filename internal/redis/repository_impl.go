@@ -8,16 +8,19 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 )
 
 type redisRepository struct {
 	client *redis.Client
+	log    logger.Logger
 }
 
-func NewRepository(client *redis.Client) Repository {
+func NewRepository(client *redis.Client, log logger.Logger) Repository {
 	return &redisRepository{
 		client: client,
+		log:    log,
 	}
 }
 
@@ -53,17 +56,39 @@ func (r *redisRepository) UpdateContainerState(
 
 	// ---- runtime behavior ----
 	if identity.ProcExePath != "" {
-		r.client.SAdd(ctx, key+":procs", identity.ProcExePath)
+		if err := r.client.SAdd(ctx, key+":procs", identity.ProcExePath).Err(); err != nil {
+			r.log.Warn("Failed to add proc path to Redis", map[string]interface{}{
+				"error": err.Error(), "key": key + ":procs",
+				"container_id": identity.ContainerID, "proc": identity.ProcExePath,
+			})
+		}
 	}
 
 	if identity.ProcCmdline != "" {
-		r.client.SAdd(ctx, key+":cmdlines", identity.ProcCmdline)
+		if err := r.client.SAdd(ctx, key+":cmdlines", identity.ProcCmdline).Err(); err != nil {
+			r.log.Warn("Failed to add cmdline to Redis", map[string]interface{}{
+				"error": err.Error(), "key": key + ":cmdlines",
+				"container_id": identity.ContainerID,
+			})
+		}
 	}
 
 	// ---- ttl ----
-	r.client.Expire(ctx, key, ttl)
-	r.client.Expire(ctx, key+":procs", ttl)
-	r.client.Expire(ctx, key+":cmdlines", ttl)
+	if err := r.client.Expire(ctx, key, ttl).Err(); err != nil {
+		r.log.Warn("Failed to set TTL on Redis key", map[string]interface{}{
+			"error": err.Error(), "key": key, "container_id": identity.ContainerID,
+		})
+	}
+	if err := r.client.Expire(ctx, key+":procs", ttl).Err(); err != nil {
+		r.log.Warn("Failed to set TTL on Redis procs key", map[string]interface{}{
+			"error": err.Error(), "key": key + ":procs", "container_id": identity.ContainerID,
+		})
+	}
+	if err := r.client.Expire(ctx, key+":cmdlines", ttl).Err(); err != nil {
+		r.log.Warn("Failed to set TTL on Redis cmdlines key", map[string]interface{}{
+			"error": err.Error(), "key": key + ":cmdlines", "container_id": identity.ContainerID,
+		})
+	}
 
 	return nil
 }
@@ -87,7 +112,11 @@ func (r *redisRepository) AddEvent(
 	}
 
 	// TTL event stream
-	r.client.Expire(ctx, key, 10*time.Minute)
+	if err := r.client.Expire(ctx, key, 10*time.Minute).Err(); err != nil {
+		r.log.Warn("Failed to set TTL on Redis events key", map[string]interface{}{
+			"error": err.Error(), "key": key, "container_id": containerID,
+		})
+	}
 
 	return nil
 }
@@ -105,6 +134,10 @@ func (r *redisRepository) IncrementFrequency(
 		return err
 	}
 
-	r.client.Expire(ctx, key, ttl)
+	if err := r.client.Expire(ctx, key, ttl).Err(); err != nil {
+		r.log.Warn("Failed to set TTL on Redis counter key", map[string]interface{}{
+			"error": err.Error(), "key": key, "container_id": containerID,
+		})
+	}
 	return nil
 }

@@ -3,9 +3,9 @@ package falco
 
 import (
 	"context"
-	"log"
 
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/db"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 )
 
 type Repository interface {
@@ -17,6 +17,7 @@ func IngestFromFile(
 	path string,
 	repo Repository,
 	onEvent func(Event),
+	log logger.Logger,
 ) error {
 
 	events := make(chan FalcoEventRaw)
@@ -24,19 +25,21 @@ func IngestFromFile(
 	go func() {
 		defer close(events)
 		if err := ReadFromFile(path, events); err != nil {
-			log.Println("[falco] reader error:", err)
+			log.Error("Falco file reader failed", err, map[string]interface{}{
+				"path": path,
+			})
 		}
 	}()
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[falco] ingest stopped by context")
+			log.Info("Falco ingest stopped by context", nil)
 			return ctx.Err()
 
 		case raw, ok := <-events:
 			if !ok {
-				log.Println("[falco] finished ingesting events")
+				log.Info("Falco finished ingesting events", nil)
 				return nil
 			}
 
@@ -56,7 +59,9 @@ func IngestFromFile(
 			// DB
 			if repo != nil {
 				if err := repo.Insert(ctx, dbEvent); err != nil {
-					log.Println("[falco] db insert error:", err)
+					log.Error("Falco DB insert failed", err, map[string]interface{}{
+						"rule": event.Rule, "path": path,
+					})
 				}
 			}
 

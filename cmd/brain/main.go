@@ -21,6 +21,7 @@ import (
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/decision"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/falco"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/model"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
@@ -28,7 +29,8 @@ import (
 )
 
 func main() {
-	log.Println("[brain] starting kube-reflex brain")
+	appLog := logger.NewSlogLogger()
+	appLog.Info("Starting kube-reflex brain", nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -55,7 +57,7 @@ func main() {
 		log.Fatalf("[brain] redis error: %v", err)
 	}
 
-	redisRepo := redisinfra.NewRepository(redisClient)
+	redisRepo := redisinfra.NewRepository(redisClient, appLog)
 
 	// ---------------- K8s ----------------
 	k8sClient, err := k8s.NewK8sClient()
@@ -65,9 +67,9 @@ func main() {
 	defer k8sClient.Close()
 
 	// ---------------- Action Layer ----------------
-	fileSink := action.NewStdoutSink() // ساده‌تر برای تست
+	fileSink := action.NewStdoutSink()
 	pgSink := action.NewPostgresSink(alertRepo)
-	actionEngine := action.NewEngine(fileSink, pgSink)
+	actionEngine := action.NewEngine(appLog, fileSink, pgSink)
 
 	// ---------------- Decision Layer ----------------
 	aggregationWindow := 10 * time.Second
@@ -76,6 +78,7 @@ func main() {
 		decision.Config{AggregationWindow: aggregationWindow},
 		judge,
 		actionEngine,
+		appLog,
 	)
 	decisionEngine.Start(ctx)
 	decisionInput := decisionEngine.InputChannel()
@@ -127,7 +130,7 @@ func main() {
 		}
 	}()
 
-	velocityDetector := velocity.NewDetector(redisClient)
+	velocityDetector := velocity.NewDetector(redisClient, appLog)
 	velocityEngine := velocity.NewEngine(velocityDetector, alertCh)
 
 	// ---------------- Falco Webhook (event channel) ----------------
@@ -149,19 +152,33 @@ func main() {
 				}
 				identity := parser.ExtractIdentity(event.OutputFields)
 				if identity.ContainerID == "" {
-					log.Println("[brain] skip event without container_id")
+					appLog.Warn("Skipping event without container_id", map[string]interface{}{
+						"rule": event.Rule,
+					})
 					continue
 				}
 				behavior, err := mapper.Map(event.Tags)
 				if err != nil {
-					log.Printf("[brain] mapper skip rule=%s err=%v", event.Rule, err)
+					appLog.Warn("Mapper skip", map[string]interface{}{
+						"rule": event.Rule, "error": err.Error(),
+					})
 					continue
 				}
 				velocityEngine.Process(ctx, identity.ContainerID, behavior.BehaviorID, event.Time)
-				_ = redisRepo.UpdateContainerState(ctx, identity, score, 15*time.Minute)
+				if err := redisRepo.UpdateContainerState(ctx, identity, score, 15*time.Minute); err != nil {
+					appLog.Error("Failed to update container state in Redis", err, map[string]interface{}{
+						"container_id": identity.ContainerID, "pod_name": identity.PodName, "namespace": identity.Namespace,
+					})
+				}
 				for _, chain := range chainRegistry.All() {
 					detected, err := fsmEngine.Process(ctx, identity.ContainerID, behavior.TacticID, chain)
-					if err != nil || detected == nil {
+					if err != nil {
+						appLog.Error("FSM process failed", err, map[string]interface{}{
+							"container_id": identity.ContainerID, "chain_id": chain.ID, "tactic_id": behavior.TacticID,
+						})
+						continue
+					}
+					if detected == nil {
 						continue
 					}
 					decisionInput <- decision.Signal{

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/k8s"
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/parser"
 	redisinfra "github.com/TaghikhaniAlireza/kube-reflex/internal/redis"
 )
@@ -27,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("[test] Redis init failed: %v", err)
 	}
-	redisRepo := redisinfra.NewRepository(redisClient)
+	redisRepo := redisinfra.NewRepository(redisClient, logger.NewSlogLogger())
 	log.Println("[test] Redis client initialized successfully")
 
 	// ---------------- Fetch all container IDs from Redis ----------------

@@ -5,19 +5,22 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/TaghikhaniAlireza/kube-reflex/internal/logger"
 	"github.com/TaghikhaniAlireza/kube-reflex/internal/scoring"
 )
 
 type Detector struct {
 	redis *redis.Client
+	log   logger.Logger
 }
 
-func NewDetector(redis *redis.Client) *Detector {
-	return &Detector{redis: redis}
+func NewDetector(redis *redis.Client, log logger.Logger) *Detector {
+	return &Detector{redis: redis, log: log}
 }
 
 func (d *Detector) AddAndScore(
@@ -59,7 +62,13 @@ func (d *Detector) AddAndScore(
 	totalScore := 0
 	for _, e := range eventsCmd.Val() {
 		_, w, _ := strings.Cut(e, ":")
-		v, _ := strconv.Atoi(w)
+		v, err := strconv.Atoi(w)
+		if err != nil {
+			d.log.Warn("Failed to parse velocity score from Redis member", map[string]interface{}{
+				"error": err.Error(), "member": e, "container_id": containerID, "rule_id": ruleID,
+			})
+			continue
+		}
 		totalScore += v
 	}
 
