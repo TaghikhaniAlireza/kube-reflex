@@ -60,6 +60,7 @@ Falco is installed using the official Falco Helm chart, configured to send alert
 ### Add Helm Repository
 
 ```bash
+choco install kubernetes-helm
 helm repo add falcosecurity https://falcosecurity.github.io/charts
 helm repo update
 ```
