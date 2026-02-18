@@ -43,30 +43,31 @@ func NewSlogLoggerDebug() *SlogLogger {
 
 // Error implements Logger.Error.
 func (l *SlogLogger) Error(msg string, err error, fields map[string]interface{}) {
-	attrs := toAttrs(fields)
+	args := l.mapToArgs(fields)
 	if err != nil {
-		attrs = append(attrs, slog.String("error", err.Error()))
+		args = append(args, "error", err.Error())
 	}
-	l.log.Error(msg, attrs...)
+	l.log.Error(msg, args...)
 }
 
 // Warn implements Logger.Warn.
 func (l *SlogLogger) Warn(msg string, fields map[string]interface{}) {
-	l.log.Warn(msg, toAttrs(fields)...)
+	l.log.Warn(msg, l.mapToArgs(fields)...)
 }
 
 // Info implements Logger.Info.
 func (l *SlogLogger) Info(msg string, fields map[string]interface{}) {
-	l.log.Info(msg, toAttrs(fields)...)
+	l.log.Info(msg, l.mapToArgs(fields)...)
 }
 
-func toAttrs(fields map[string]interface{}) []slog.Attr {
+// mapToArgs converts a map into key-value pairs for slog's variadic args.
+func (l *SlogLogger) mapToArgs(fields map[string]interface{}) []any {
 	if len(fields) == 0 {
 		return nil
 	}
-	attrs := make([]slog.Attr, 0, len(fields))
+	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
-		attrs = append(attrs, slog.Any(k, v))
+		args = append(args, k, v)
 	}
-	return attrs
+	return args
 }
